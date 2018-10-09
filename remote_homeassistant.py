@@ -18,7 +18,7 @@ from homeassistant.core import EventOrigin, split_entity_id
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
 from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
                                  EVENT_HOMEASSISTANT_STOP,
-                                 EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED, CONF_URL)
+                                 EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED)
 from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
@@ -185,6 +185,10 @@ class RemoteConnection(object):
             """
             event_data = event.data
             service_data = event_data['service_data']
+
+            if not service_data:
+                return
+
             entity_ids = service_data.get('entity_id', None)
 
             if not entity_ids:
