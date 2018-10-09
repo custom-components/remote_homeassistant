@@ -29,7 +29,7 @@ remote_homeassistant:
     - zwave.node_event
 ```
 
-{% configuration %}
+```
 host:
   host: Hostname or IP address of remote instance.
   required: true
@@ -54,4 +54,4 @@ subscribe_events:
   description: Further list of events, which should be forwarded from the remote instance.
   required: false
   type: list
-{% endconfiguration %}
+```
