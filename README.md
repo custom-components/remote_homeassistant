@@ -1,3 +1,7 @@
+Follow the discussion on https://github.com/home-assistant/home-assistant/pull/13876
+
+
+
 The master instance connects to the Websocket APIs of the slaves, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`.
 
 After the connection is completed, the remote states get populated into the master instance.
