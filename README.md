@@ -1,5 +1,6 @@
 Follow the discussion on https://github.com/home-assistant/home-assistant/pull/13876
 
+Compatible with home-assistant >= 0.80
 
 
 The master instance connects to the Websocket APIs of the slaves, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`.
