@@ -13,7 +13,7 @@ import aiohttp
 import voluptuous as vol
 
 from homeassistant.core import callback
-import homeassistant.components.websocket_api as api
+import homeassistant.components.websocket_api.auth as api
 from homeassistant.core import EventOrigin, split_entity_id
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
 from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
