@@ -82,6 +82,7 @@ class RemoteConnection(object):
         self._connection = None
         self._entities = set()
         self._handlers = {}
+        self._remove_listener = None
 
         self.__id = 1
 
@@ -138,6 +139,9 @@ class RemoteConnection(object):
         # Remove all published entries
         for entity in self._entities:
             self._hass.states.async_remove(entity)
+        if self._remove_listener is not None:
+            self._remove_listener()
+        self._remove_listener = None
         self._entities = set()
         asyncio.ensure_future(self.async_connect())
 
@@ -147,13 +151,28 @@ class RemoteConnection(object):
                 data = await self._connection.receive()
             except aiohttp.client_exceptions.ClientError as err:
                 _LOGGER.error('remote websocket connection closed: %s', err)
-                await self._disconnected()
-                return
+                break
 
             if not data:
-                return
+                break
 
-            message = data.json()
+            if data.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
+                _LOGGER.error('websocket connection is closing')
+                break
+
+            if data.type == aiohttp.WSMsgType.ERROR:
+                _LOGGER.error('websocket connection had an error')
+                break
+
+            try:
+                message = data.json()
+            except TypeError as err:
+                _LOGGER.error('could not decode data (%s) as json: %s', data, err)
+                break
+
+            if message is None:
+                break
+
             _LOGGER.debug('received: %s', message)
 
             if message['type'] == api.TYPE_AUTH_OK:
@@ -164,7 +183,11 @@ class RemoteConnection(object):
                     _LOGGER.error('Password required, but not provided')
                     return
                 data = {'type': api.TYPE_AUTH, 'api_password': self._password}
-                await self._connection.send_json(data)
+                try:
+                   await self._connection.send_json(data)
+                except Exception as err:
+                   _LOGGER.error('could not send data to remote connection: %s', err)
+                   break
 
             elif message['type'] == api.TYPE_AUTH_INVALID:
                 _LOGGER.error('Auth invalid, check your API password')
@@ -175,6 +198,8 @@ class RemoteConnection(object):
                 callback = self._handlers.get(message['id'])
                 if callback is not None:
                     callback(message)
+
+        await self._disconnected()
 
     async def _init(self):
         async def forward_event(event):
@@ -226,7 +251,12 @@ class RemoteConnection(object):
 
             _LOGGER.debug('forward event: %s', data)
 
-            await self._connection.send_json(data)
+            try:
+               await self._connection.send_json(data)
+            except Exception as err:
+                _LOGGER.error('could not send data to remote connection: %s', err)
+                await self._disconnected()
+
 
         def state_changed(entity_id, state, attr):
             """Publish remote state change on local instance."""
@@ -272,7 +302,7 @@ class RemoteConnection(object):
 
                 state_changed(entity_id, state, attributes)
 
-        self._hass.bus.async_listen(EVENT_CALL_SERVICE, forward_event)
+        self._remove_listener = self._hass.bus.async_listen(EVENT_CALL_SERVICE, forward_event)
 
         for event in self._subscribe_events:
             await self._call(fire_event, 'subscribe_events', event_type=event)
