@@ -62,7 +62,10 @@ entity_prefix:
   required: false
   type: string
 subscribe_events:
-  description: Further list of events, which should be forwarded from the remote instance.
+  description: Further list of events, which should be forwarded from the remote instance. If you override this, you probably will want to add state_changed!!
   required: false
   type: list
+  default: 
+  - state_changed
+  - service_registered
 ```
