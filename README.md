@@ -15,9 +15,23 @@ When the connection to the remote instance is lost, all previously published sta
 
 A possible use case for this is to be able to use different Z-Wave networks, on different Z-Wave sticks (with the second one possible running on another computer in a different location).
 
-## Configuration 
+## Installation 
 
 To integrate `remote_homeassistant` into Home Assistant, add the following section to your `configuration.yaml` file:
+
+## Configuration 
+
+Simple example:
+
+```yaml
+# Example configuration.yaml entry
+remote_homeassistant:
+  instances:
+  - host: raspberrypi.local
+```
+
+
+Full example:
 
 ```yaml
 # Example configuration.yaml entry
