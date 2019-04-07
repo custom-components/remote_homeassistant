@@ -27,6 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 CONF_INSTANCES = 'instances'
 CONF_SECURE = 'secure'
+CONF_ACCESS_TOKEN = 'access_token'
 CONF_API_PASSWORD = 'api_password'
 CONF_SUBSCRIBE_EVENTS = 'subscribe_events'
 CONF_ENTITY_PREFIX = 'entity_prefix'
@@ -41,7 +42,8 @@ INSTANCES_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST): cv.string,
     vol.Optional(CONF_PORT, default=8123): cv.port,
     vol.Optional(CONF_SECURE, default=False): cv.boolean,
-    vol.Optional(CONF_API_PASSWORD): cv.string,
+    vol.Exclusive(CONF_ACCESS_TOKEN, 'auth'): cv.string,
+    vol.Exclusive(CONF_API_PASSWORD, 'auth'): cv.string,
     vol.Optional(CONF_SUBSCRIBE_EVENTS,
                  default=DEFAULT_SUBSCRIBED_EVENTS): cv.ensure_list,
     vol.Optional(CONF_ENTITY_PREFIX, default=DEFAULT_ENTITY_PREFIX): cv.string,
@@ -75,6 +77,7 @@ class RemoteConnection(object):
         self._host = conf.get(CONF_HOST)
         self._port = conf.get(CONF_PORT)
         self._secure = conf.get(CONF_SECURE)
+        self._access_token = conf.get(CONF_ACCESS_TOKEN)
         self._password = conf.get(CONF_API_PASSWORD)
         self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS)
         self._entity_prefix = conf.get(CONF_ENTITY_PREFIX)
@@ -179,10 +182,13 @@ class RemoteConnection(object):
                 await self._init()
 
             elif message['type'] == api.TYPE_AUTH_REQUIRED:
-                if not self._password:
-                    _LOGGER.error('Password required, but not provided')
+                if not (self._access_token or self._password):
+                    _LOGGER.error('Access token or api password required, but not provided')
                     return
-                data = {'type': api.TYPE_AUTH, 'api_password': self._password}
+                if self._access_token:
+                   data = {'type': api.TYPE_AUTH, 'access_token': self._access_token}
+                else:
+                   data = {'type': api.TYPE_AUTH, 'api_password': self._password}
                 try:
                    await self._connection.send_json(data)
                 except Exception as err:
@@ -190,7 +196,7 @@ class RemoteConnection(object):
                    break
 
             elif message['type'] == api.TYPE_AUTH_INVALID:
-                _LOGGER.error('Auth invalid, check your API password')
+                _LOGGER.error('Auth invalid, check your access token or API password')
                 await self._connection.close()
                 return
 
