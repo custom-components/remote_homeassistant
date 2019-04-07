@@ -28,7 +28,8 @@ remote_homeassistant:
   - host: localhost
     port: 8125
     secure: true
-    api_password: test
+    access_token: !secure access_token
+    api_password: !secure http_password
     entity_prefix: "slave02_"
     subscribe_events:
     - zwave.network_ready
@@ -48,8 +49,12 @@ secure:
   description: Use TLS (wss://) to connect to the remote instance.
   required: false
   type: bool
+access_token:
+  description: Access token of the remote instance, if set. Mutually exclusive with api_password
+  required: false
+  type: string
 api_password:
-  description: API password of the remote instance, if set.
+  description: DEPRECTAED! API password of the remote instance, if set. Mutually exclusive with access_token
   required: false
   type: string
 entity_prefix:
