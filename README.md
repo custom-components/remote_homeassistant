@@ -42,8 +42,8 @@ remote_homeassistant:
   - host: localhost
     port: 8125
     secure: true
-    access_token: !secure access_token
-    api_password: !secure http_password
+    access_token: !secret access_token
+    api_password: !secret http_password
     entity_prefix: "slave02_"
     subscribe_events:
     - zwave.network_ready
