@@ -1,0 +1,4 @@
+{
+  "name": "Remote Home-Assistant",
+  "iot_class": "Local Polling"
+}
