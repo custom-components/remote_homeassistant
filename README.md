@@ -83,3 +83,15 @@ subscribe_events:
   - state_changed
   - service_registered
 ```
+
+## Special notes 
+
+If you have remote domains (e.g. `switch`), that are not loaded on the master instance you need to add a dummy entry on the master, otherwise you'll get a `Call service failed` error.
+
+E.g. on the master:
+
+```
+switch:
+```
+
+to enable all `switch` services.
