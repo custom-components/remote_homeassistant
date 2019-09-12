@@ -1,0 +1,14 @@
+{
+  "domain": "remote_homeassistant",
+  "name": "Remote Home-Assistant",
+  "documentation": "https://github.com/lukas-hetzenecker/home-assistant-remote",
+  "dependencies": [],
+  "config_flow": false,
+  "codeowners": [
+    "@lukas-hetzenecker"
+  ],
+  "requirements": [
+  ],
+  "homeassistant": "0.96.0"
+}
+
