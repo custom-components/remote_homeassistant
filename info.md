@@ -24,13 +24,18 @@ When the connection to the remote instance is lost, all previously published sta
 A possible use case for this is to be able to use different Z-Wave networks, on different Z-Wave sticks (with the second one possible running on another computer in a different location).
 
 
-{% if not installed %}
 ## Installation
 
-1. Click install.
-1. Add `remote_homeassistant:` to your HA configuration.
+If you use HACS:
 
-{% endif %}
+1. Click install.
+2. Add `remote_homeassistant:` to your HA configuration.
+
+Otherwise:
+
+1. To use this plugin, copy the `remote_homeassistant` folder into your [custom_components folder](https://developers.home-assistant.io/docs/en/creating_component_loading.html).
+2. Add `remote_homeassistant:` to your HA configuration.
+
 ## Configuration 
 
 To integrate `remote_homeassistant` into Home Assistant, add the following section to your `configuration.yaml` file:
@@ -97,6 +102,22 @@ subscribe_events:
   - state_changed
   - service_registered
 ```
+
+## Special notes 
+
+If you have remote domains (e.g. `switch`), that are not loaded on the master instance you need to add a dummy entry on the master, otherwise you'll get a `Call service failed` error.
+
+E.g. on the master:
+
+```
+switch:
+```
+
+to enable all `switch` services.
+
+---
+
+See also the discussion on https://github.com/home-assistant/home-assistant/pull/13876 and https://github.com/home-assistant/architecture/issues/246 for this component
 
 [hacs]: https://github.com/custom-components/hacs
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
