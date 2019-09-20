@@ -12,7 +12,7 @@ Platform | Description
 -- | --
 `remote_homeassistant` | Link multiple Home-Assistant instances together .
 
-The master instance connects to the Websocket APIs of the slaves, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`.
+The master instance connects to the Websocket APIs of the slaves, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
 
 After the connection is completed, the remote states get populated into the master instance.
 The entity ids can optionally be prefixed via the `entity_prefix` parameter.
@@ -61,6 +61,7 @@ remote_homeassistant:
   - host: localhost
     port: 8125
     secure: true
+    verify_ssl: false
     access_token: !secret access_token
     api_password: !secret http_password
     entity_prefix: "slave02_"
@@ -82,6 +83,11 @@ secure:
   description: Use TLS (wss://) to connect to the remote instance.
   required: false
   type: bool
+verify_ssl:
+  description: Enables / disables verification of the SSL certificate of the remote instance.
+  required: false
+  type: bool
+  default: true
 access_token:
   description: Access token of the remote instance, if set. Mutually exclusive with api_password
   required: false
