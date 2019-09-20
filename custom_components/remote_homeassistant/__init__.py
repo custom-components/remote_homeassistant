@@ -275,32 +275,40 @@ class RemoteConnection(object):
                 entity_id = domain + '.' + object_id
 
             # Add local customization data
-            if DATA_CUSTOMIZE in self._hass.data:
+            if attr is not None and DATA_CUSTOMIZE in self._hass.data:
                 attr.update(self._hass.data[DATA_CUSTOMIZE].get(entity_id))
 
             self._entities.add(entity_id)
             self._hass.states.async_set(entity_id, state, attr)
-
+            
         def fire_event(message):
             """Publish remove event on local instance."""
-            if message['type'] == 'result':
-                return
+            try:
+                if message['type'] == 'result':
+                    return
 
-            if message['type'] != 'event':
-                return
+                if message['type'] != 'event':
+                    return
 
-            if message['event']['event_type'] == 'state_changed':
-                entity_id = message['event']['data']['entity_id']
-                state = message['event']['data']['new_state']['state']
-                attr = message['event']['data']['new_state']['attributes']
-                state_changed(entity_id, state, attr)
-            else:
-                event = message['event']
-                self._hass.bus.async_fire(
-                    event_type=event['event_type'],
-                    event_data=event['data'],
-                    origin=EventOrigin.remote
-                )
+                if message['event']['event_type'] == 'state_changed':
+                    entity_id = message['event']['data']['entity_id']
+                    if message['event']['data']['new_state'] is not None:
+                        state = message['event']['data']['new_state']['state']
+                        attr = message['event']['data']['new_state']['attributes']
+                    else:
+                        state = None
+                        attr = None
+
+                    state_changed(entity_id, state, attr)
+                else:
+                    event = message['event']
+                    self._hass.bus.async_fire(
+                        event_type=event['event_type'],
+                        event_data=event['data'],
+                        origin=EventOrigin.remote
+                    )
+            except Exception:
+                _LOGGER.exception('Error parsing message from remote HA instance "%s"', message)               
 
         def got_states(message):
             """Called when list of remote states is available."""
