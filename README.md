@@ -76,7 +76,15 @@ remote_homeassistant:
     exclude:
       entities:
       - group.all_switches
-
+    filter:
+    - entity_id: sensor.faulty_pc_energy
+      above: 100
+    - unit_of_measurement: W
+      above: 0
+      below: 1000
+    - entity_id: sensor.faulty_*_power
+      unit_of_measurement: W
+      below: 500
     subscribe_events:
     - zwave.network_ready
     - zwave.node_event
@@ -134,6 +142,26 @@ exclude:
     domains:
       description: The list of domains to be excluded from the remote instance
       type: list
+filter:
+  description: Filters out states above or below a certain threshold, e.g. outliers reported by faulty sensors
+  required: false
+  type: list of
+    entity_id:
+      description: which entities the filter should match, supports wildcards
+      required: false
+      type: string
+    unit_of_measurement
+      description: which units of measurement the filter should match
+      required: false
+      type: string
+    above:
+      description: states above this threshold will be ignored
+      required: false
+      type: float
+    below:
+      description: states below this threshold will be ignored
+      required: false
+      type: float
 subscribe_events:
   description: Further list of events, which should be forwarded from the remote instance. If you override this, you probably will want to add state_changed!!
   required: false

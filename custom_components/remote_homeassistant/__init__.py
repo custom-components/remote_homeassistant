@@ -4,11 +4,12 @@ Connect two Home Assistant instances via the Websocket API.
 For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/remote_homeassistant/
 """
-
+import fnmatch
 import logging
 import copy
 import asyncio
 import aiohttp
+import re
 
 import voluptuous as vol
 
@@ -18,8 +19,9 @@ from homeassistant.core import EventOrigin, split_entity_id
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
 from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
                                  EVENT_HOMEASSISTANT_STOP,
-                                 EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED, CONF_EXCLUDE, CONF_ENTITIES,
-                                 CONF_DOMAINS, CONF_INCLUDE)
+                                 EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED,
+                                 CONF_EXCLUDE, CONF_ENTITIES, CONF_ENTITY_ID,
+                                 CONF_DOMAINS, CONF_INCLUDE, CONF_UNIT_OF_MEASUREMENT, CONF_ABOVE, CONF_BELOW)
 from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
@@ -33,6 +35,7 @@ CONF_ACCESS_TOKEN = 'access_token'
 CONF_API_PASSWORD = 'api_password'
 CONF_SUBSCRIBE_EVENTS = 'subscribe_events'
 CONF_ENTITY_PREFIX = 'entity_prefix'
+CONF_FILTER = 'filter'
 
 DOMAIN = 'remote_homeassistant'
 
@@ -62,6 +65,19 @@ INSTANCES_SCHEMA = vol.Schema({
                 cv.ensure_list, [cv.string]
             ),
         }
+    ),
+    vol.Optional(CONF_FILTER, default=[]): vol.All(
+        cv.ensure_list,
+        [
+            vol.Schema(
+                {
+                    vol.Optional(CONF_ENTITY_ID): cv.string,
+                    vol.Optional(CONF_UNIT_OF_MEASUREMENT): cv.string,
+                    vol.Optional(CONF_ABOVE): vol.Coerce(float),
+                    vol.Optional(CONF_BELOW): vol.Coerce(float),
+                }
+            )
+        ]
     ),
     vol.Optional(CONF_SUBSCRIBE_EVENTS,
                  default=DEFAULT_SUBSCRIBED_EVENTS): cv.ensure_list,
@@ -108,6 +124,16 @@ class RemoteConnection(object):
         self._whitelist_d = set(include.get(CONF_DOMAINS, []))
         self._blacklist_e = set(exclude.get(CONF_ENTITIES, []))
         self._blacklist_d = set(exclude.get(CONF_DOMAINS, []))
+
+        self._filter = [
+            {
+                CONF_ENTITY_ID: re.compile(fnmatch.translate(f.get(CONF_ENTITY_ID))) if f.get(CONF_ENTITY_ID) else None,
+                CONF_UNIT_OF_MEASUREMENT: f.get(CONF_UNIT_OF_MEASUREMENT),
+                CONF_ABOVE: f.get(CONF_ABOVE),
+                CONF_BELOW: f.get(CONF_BELOW)
+            }
+            for f in conf.get(CONF_FILTER, [])
+        ]
 
         self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS)
         self._entity_prefix = conf.get(CONF_ENTITY_PREFIX)
@@ -310,6 +336,26 @@ class RemoteConnection(object):
                 and domain not in self._whitelist_d
             ):
                 return
+
+            for f in self._filter:
+                if f[CONF_ENTITY_ID] and not f[CONF_ENTITY_ID].match(entity_id):
+                    continue
+                if f[CONF_UNIT_OF_MEASUREMENT]:
+                    if CONF_UNIT_OF_MEASUREMENT not in attr:
+                        continue
+                    if f[CONF_UNIT_OF_MEASUREMENT] != attr[CONF_UNIT_OF_MEASUREMENT]:
+                        continue
+                try:
+                    if f[CONF_BELOW] and float(state) < f[CONF_BELOW]:
+                        _LOGGER.info("%s: ignoring state '%s', because "
+                                     "below '%s'", entity_id, state, f[CONF_BELOW])
+                        return
+                    if f[CONF_ABOVE] and float(state) > f[CONF_ABOVE]:
+                        _LOGGER.info("%s: ignoring state '%s', because "
+                                     "above '%s'", entity_id, state, f[CONF_ABOVE])
+                        return
+                except ValueError:
+                    pass
 
             if self._entity_prefix:
                 object_id = self._entity_prefix + object_id
