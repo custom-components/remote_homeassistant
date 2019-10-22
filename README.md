@@ -74,6 +74,8 @@ remote_homeassistant:
       - zwave.controller
       - zwave.desk_light
     exclude:
+      domains:
+      - persistent_notification
       entities:
       - group.all_switches
     filter:
@@ -86,6 +88,8 @@ remote_homeassistant:
       unit_of_measurement: W
       below: 500
     subscribe_events:
+    - state_changed
+    - service_registered
     - zwave.network_ready
     - zwave.node_event
 ```
