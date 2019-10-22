@@ -65,6 +65,18 @@ remote_homeassistant:
     access_token: !secret access_token
     api_password: !secret http_password
     entity_prefix: "slave02_"
+    include:
+      domains:
+      - sensor
+      - switch
+      - group
+      entities:
+      - zwave.controller
+      - zwave.desk_light
+    exclude:
+      entities:
+      - group.all_switches
+
     subscribe_events:
     - zwave.network_ready
     - zwave.node_event
@@ -100,6 +112,28 @@ entity_prefix:
   description: Prefix for all entities of the remote instance.
   required: false
   type: string
+include:
+  description: Configures what should be included from the remote instance. Values set by the exclude lists will take precedence.
+  required: false
+  default: include everything
+  type: mapping of
+    entities:
+      description: The list of entity ids to be included from the remote instance
+      type: list
+    domains:
+      description: The list of domains to be included from the remote instance
+      type: list
+exclude:
+  description: Configures what should be excluded from the remote instance
+  required: false
+  default: exclude nothing
+  type: mapping of
+    entities:
+      description: The list of entity ids to be excluded from the remote instance
+      type: list
+    domains:
+      description: The list of domains to be excluded from the remote instance
+      type: list
 subscribe_events:
   description: Further list of events, which should be forwarded from the remote instance. If you override this, you probably will want to add state_changed!!
   required: false
