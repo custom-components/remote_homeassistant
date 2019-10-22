@@ -18,7 +18,8 @@ from homeassistant.core import EventOrigin, split_entity_id
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
 from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
                                  EVENT_HOMEASSISTANT_STOP,
-                                 EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED)
+                                 EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED, CONF_EXCLUDE, CONF_ENTITIES,
+                                 CONF_DOMAINS, CONF_INCLUDE)
 from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
@@ -46,6 +47,22 @@ INSTANCES_SCHEMA = vol.Schema({
     vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
     vol.Exclusive(CONF_ACCESS_TOKEN, 'auth'): cv.string,
     vol.Exclusive(CONF_API_PASSWORD, 'auth'): cv.string,
+    vol.Optional(CONF_EXCLUDE, default={}): vol.Schema(
+        {
+            vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
+            vol.Optional(CONF_DOMAINS, default=[]): vol.All(
+                cv.ensure_list, [cv.string]
+            ),
+        }
+    ),
+    vol.Optional(CONF_INCLUDE, default={}): vol.Schema(
+        {
+            vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
+            vol.Optional(CONF_DOMAINS, default=[]): vol.All(
+                cv.ensure_list, [cv.string]
+            ),
+        }
+    ),
     vol.Optional(CONF_SUBSCRIBE_EVENTS,
                  default=DEFAULT_SUBSCRIBED_EVENTS): cv.ensure_list,
     vol.Optional(CONF_ENTITY_PREFIX, default=DEFAULT_ENTITY_PREFIX): cv.string,
@@ -82,6 +99,16 @@ class RemoteConnection(object):
         self._verify_ssl = conf.get(CONF_VERIFY_SSL)
         self._access_token = conf.get(CONF_ACCESS_TOKEN)
         self._password = conf.get(CONF_API_PASSWORD)
+
+        # see homeassistant/components/influxdb/__init__.py
+        # for include/exclude logic
+        include = conf.get(CONF_INCLUDE, {})
+        exclude = conf.get(CONF_EXCLUDE, {})
+        self._whitelist_e = set(include.get(CONF_ENTITIES, []))
+        self._whitelist_d = set(include.get(CONF_DOMAINS, []))
+        self._blacklist_e = set(exclude.get(CONF_ENTITIES, []))
+        self._blacklist_d = set(exclude.get(CONF_DOMAINS, []))
+
         self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS)
         self._entity_prefix = conf.get(CONF_ENTITY_PREFIX)
 
@@ -269,8 +296,22 @@ class RemoteConnection(object):
 
         def state_changed(entity_id, state, attr):
             """Publish remote state change on local instance."""
+            domain, object_id = split_entity_id(entity_id)
+
+            if (
+                entity_id in self._blacklist_e
+                or domain in self._blacklist_d
+            ):
+                return
+
+            if (
+                (self._whitelist_e or self._whitelist_d)
+                and entity_id not in self._whitelist_e
+                and domain not in self._whitelist_d
+            ):
+                return
+
             if self._entity_prefix:
-                domain, object_id = split_entity_id(entity_id)
                 object_id = self._entity_prefix + object_id
                 entity_id = domain + '.' + object_id
 
