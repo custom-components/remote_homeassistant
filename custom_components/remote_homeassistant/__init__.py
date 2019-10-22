@@ -8,12 +8,14 @@ import fnmatch
 import logging
 import copy
 import asyncio
+from contextlib import suppress
+
 import aiohttp
 import re
 
 import voluptuous as vol
 
-from homeassistant.core import callback
+from homeassistant.core import callback, Context
 import homeassistant.components.websocket_api.auth as api
 from homeassistant.core import EventOrigin, split_entity_id
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
@@ -377,15 +379,26 @@ class RemoteConnection(object):
                 return
 
             if message['event']['event_type'] == 'state_changed':
-                entity_id = message['event']['data']['entity_id']
-                state = message['event']['data']['new_state']['state']
-                attr = message['event']['data']['new_state']['attributes']
+                data = message['event']['data']
+                entity_id = data['entity_id']
+                if not data['new_state']:
+                    # entity was removed in the remote instance
+                    with suppress(ValueError, AttributeError):
+                        self._entities.remove(entity_id)
+                    self._hass.states.async_remove(entity_id)
+                    return
+
+                state = data['new_state']['state']
+                attr = data['new_state']['attributes']
                 state_changed(entity_id, state, attr)
             else:
                 event = message['event']
                 self._hass.bus.async_fire(
                     event_type=event['event_type'],
                     event_data=event['data'],
+                    context=Context(id=event['context'].get('id'),
+                                    user_id=event['context'].get('user_id'),
+                                    parent_id=event['context'].get('parent_id')),
                     origin=EventOrigin.remote
                 )
 
