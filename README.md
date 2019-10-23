@@ -82,8 +82,8 @@ remote_homeassistant:
     - entity_id: sensor.faulty_pc_energy
       above: 100
     - unit_of_measurement: W
-      above: 0
-      below: 1000
+      below: 0
+      above: 1000
     - entity_id: sensor.faulty_*_power
       unit_of_measurement: W
       below: 500
