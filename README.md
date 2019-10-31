@@ -12,12 +12,12 @@ Platform | Description
 -- | --
 `remote_homeassistant` | Link multiple Home-Assistant instances together .
 
-The master instance connects to the Websocket APIs of the slaves, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
+The master instance connects to the Websocket APIs of the secondary instances, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
 
 After the connection is completed, the remote states get populated into the master instance.
 The entity ids can optionally be prefixed via the `entity_prefix` parameter.
 
-The component keeps track which objects originate from which instance. Whenever a service is called on an object, the call gets forwarded to the particular slave instance.
+The component keeps track which objects originate from which instance. Whenever a service is called on an object, the call gets forwarded to the particular secondary instance.
 
 When the connection to the remote instance is lost, all previously published states are removed again from the local state registry.
 
@@ -64,7 +64,7 @@ remote_homeassistant:
     verify_ssl: false
     access_token: !secret access_token
     api_password: !secret http_password
-    entity_prefix: "slave02_"
+    entity_prefix: "instance02_"
     include:
       domains:
       - sensor
