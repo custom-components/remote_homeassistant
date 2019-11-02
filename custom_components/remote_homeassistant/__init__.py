@@ -389,7 +389,7 @@ class RemoteConnection(object):
                 if not data['new_state']:
                     entity_id = self._prefixed_entity_id(entity_id)
                     # entity was removed in the remote instance
-                    with suppress(ValueError, AttributeError):
+                    with suppress(ValueError, AttributeError, KeyError):
                         self._entities.remove(entity_id)
                     self._hass.states.async_remove(entity_id)
                     return
