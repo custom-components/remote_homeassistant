@@ -18,6 +18,8 @@ import voluptuous as vol
 from homeassistant.core import callback, Context
 import homeassistant.components.websocket_api.auth as api
 from homeassistant.core import EventOrigin, split_entity_id
+from homeassistant.helpers.device_registry import EVENT_DEVICE_REGISTRY_UPDATED, DeviceEntry
+from homeassistant.helpers.entity_registry import RegistryEntry, EVENT_ENTITY_REGISTRY_UPDATED
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
 from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
                                  EVENT_HOMEASSISTANT_STOP,
@@ -261,7 +263,7 @@ class RemoteConnection(object):
             else:
                 callback = self._handlers.get(message['id'])
                 if callback is not None:
-                    callback(message)
+                    await callback(message)
 
         await self._disconnected()
 
@@ -370,7 +372,7 @@ class RemoteConnection(object):
             self._entities.add(entity_id)
             self._hass.states.async_set(entity_id, state, attr)
 
-        def fire_event(message):
+        async def fire_event(message):
             """Publish remove event on local instance."""
             if message['type'] == 'result':
                 return
@@ -402,7 +404,7 @@ class RemoteConnection(object):
                     origin=EventOrigin.remote
                 )
 
-        def got_states(message):
+        async def got_states(message):
             """Called when list of remote states is available."""
             for entity in message['result']:
                 entity_id = entity['entity_id']
@@ -411,9 +413,47 @@ class RemoteConnection(object):
 
                 state_changed(entity_id, state, attributes)
 
+        #def device_registry_updated()
+
+        device_registry = await self._hass.helpers.device_registry.async_get_registry()
+
+        async def got_device_registry_list(message):
+            for entry in message['result']:
+                device_id = entry['id']
+                is_new = device_id in device_registry.devices
+
+                device_registry.devices[device_id] = DeviceEntry(is_new=is_new, **entry)
+                device_registry.async_schedule_save()
+
+                self._hass.bus.async_fire(
+                    EVENT_DEVICE_REGISTRY_UPDATED,
+                    {
+                        "action": "create" if is_new else "update",
+                        "device_id": device_id,
+                    },
+                )
+
+        entity_registry = await self._hass.helpers.entity_registry.async_get_registry()
+
+        async def got_entity_registry_list(message):
+            for entry in message['result']:
+                entity_id = entry['entity_id']
+
+                entity_registry.devices[entity_id] = RegistryEntry(**entry)
+                device_registry.async_schedule_save()
+
+                self.hass.bus.async_fire(
+                    EVENT_ENTITY_REGISTRY_UPDATED, {"action": "create", "entity_id": entity_id}
+                )
+
         self._remove_listener = self._hass.bus.async_listen(EVENT_CALL_SERVICE, forward_event)
 
         for event in self._subscribe_events:
             await self._call(fire_event, 'subscribe_events', event_type=event)
+
+        #await self._call(device_registry_updated, 'device_registry_updated', event_type=event)
+
+        await self._call(got_device_registry_list, "config/device_registry/list")
+        await self._call(got_entity_registry_list, "config/entity_registry/list")
 
         await self._call(got_states, 'get_states')
