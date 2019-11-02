@@ -147,6 +147,14 @@ class RemoteConnection(object):
 
         self.__id = 1
 
+    def _prefixed_entity_id(self, entity_id):
+        if self._entity_prefix:
+            domain, object_id = split_entity_id(entity_id)
+            object_id = self._entity_prefix + object_id
+            entity_id = domain + '.' + object_id
+            return entity_id
+        return entity_id
+
     @callback
     def _get_url(self):
         """Get url to connect to."""
@@ -321,7 +329,6 @@ class RemoteConnection(object):
                 _LOGGER.error('could not send data to remote connection: %s', err)
                 await self._disconnected()
 
-
         def state_changed(entity_id, state, attr):
             """Publish remote state change on local instance."""
             domain, object_id = split_entity_id(entity_id)
@@ -359,9 +366,7 @@ class RemoteConnection(object):
                 except ValueError:
                     pass
 
-            if self._entity_prefix:
-                object_id = self._entity_prefix + object_id
-                entity_id = domain + '.' + object_id
+            entity_id = self._prefixed_entity_id(entity_id)
 
             # Add local customization data
             if DATA_CUSTOMIZE in self._hass.data:
@@ -382,6 +387,7 @@ class RemoteConnection(object):
                 data = message['event']['data']
                 entity_id = data['entity_id']
                 if not data['new_state']:
+                    entity_id = self._prefixed_entity_id(entity_id)
                     # entity was removed in the remote instance
                     with suppress(ValueError, AttributeError):
                         self._entities.remove(entity_id)
