@@ -37,7 +37,14 @@ CONF_ACCESS_TOKEN = 'access_token'
 CONF_API_PASSWORD = 'api_password'
 CONF_SUBSCRIBE_EVENTS = 'subscribe_events'
 CONF_ENTITY_PREFIX = 'entity_prefix'
+CONF_STATE_ENTITY_NAME = 'state_entity_name'
 CONF_FILTER = 'filter'
+
+STATE_INIT = 'initializing'
+STATE_CONNECTING = 'connecting'
+STATE_CONNECTED = 'connected'
+STATE_RECONNECTING = 'reconnecting'
+STATE_DISCONNECTED = 'disconnected'
 
 DOMAIN = 'remote_homeassistant'
 
@@ -47,6 +54,7 @@ DEFAULT_ENTITY_PREFIX = ''
 
 INSTANCES_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST): cv.string,
+    vol.Required(CONF_STATE_ENTITY_NAME): cv.string,
     vol.Optional(CONF_PORT, default=8123): cv.port,
     vol.Optional(CONF_SECURE, default=False): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
@@ -112,6 +120,7 @@ class RemoteConnection(object):
         """Initialize the connection."""
         self._hass = hass
         self._host = conf.get(CONF_HOST)
+        self._connection_state_entity = 'sensor.' + conf.get(CONF_STATE_ENTITY_NAME)
         self._port = conf.get(CONF_PORT)
         self._secure = conf.get(CONF_SECURE)
         self._verify_ssl = conf.get(CONF_VERIFY_SSL)
@@ -145,6 +154,17 @@ class RemoteConnection(object):
         self._handlers = {}
         self._remove_listener = None
 
+        self._instance_attrs = {
+            'host': self._host,
+            'port': self._port,
+            'secure': self._secure,
+            'verify_ssl': self._verify_ssl,
+            'entity_prefix': self._entity_prefix
+        }
+
+        self._entities.add(self._connection_state_entity)
+        self._hass.states.async_set(self._connection_state_entity, STATE_CONNECTING, self._instance_attrs)
+
         self.__id = 1
 
     def _prefixed_entity_id(self, entity_id):
@@ -166,6 +186,7 @@ class RemoteConnection(object):
         url = self._get_url()
 
         session = async_get_clientsession(self._hass, self._verify_ssl)
+        self._hass.states.async_set(self._connection_state_entity, STATE_CONNECTING, self._instance_attrs)
 
         while True:
             try:
@@ -174,17 +195,20 @@ class RemoteConnection(object):
             except aiohttp.client_exceptions.ClientError as err:
                 _LOGGER.error(
                     'Could not connect to %s, retry in 10 seconds...', url)
+                self._hass.states.async_set(self._connection_state_entity, STATE_RECONNECTING, self._instance_attrs)
                 await asyncio.sleep(10)
             else:
                 _LOGGER.info(
                     'Connected to home-assistant websocket at %s', url)
+                self._hass.states.async_set(self._connection_state_entity, STATE_CONNECTED, self._instance_attrs)
                 break
 
         async def stop():
             """Close connection."""
             if self._connection is not None:
                 await self._connection.close()
-
+            self._hass.states.async_set(self._connection_state_entity, STATE_DISCONNECTED)
+        
         self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop)
 
         asyncio.ensure_future(self._recv())
@@ -210,6 +234,8 @@ class RemoteConnection(object):
             self._hass.states.async_remove(entity)
         if self._remove_listener is not None:
             self._remove_listener()
+        if self._connection_state_entity is not None:
+            self._hass.states.async_set(self._connection_state_entity, STATE_DISCONNECTED)
         self._remove_listener = None
         self._entities = set()
         asyncio.ensure_future(self.async_connect())
