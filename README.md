@@ -12,7 +12,7 @@ Platform | Description
 -- | --
 `remote_homeassistant` | Link multiple Home-Assistant instances together .
 
-The master instance connects to the Websocket APIs of the secondary instances, the connection options are specified via the `host`, `port`, and `secure` configuration parameters. An API password can also be set via `api_password`. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
+The master instance connects to the Websocket APIs of the secondary instances (already enabled out of box), the connection options are specified via the `host`, `port`, and `secure` configuration parameters. If the secondary instance requires an access token to connect (created on the Profile page), it can be set via the `access_token` parameter. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
 
 After the connection is completed, the remote states get populated into the master instance.
 The entity ids can optionally be prefixed via the `entity_prefix` parameter.
