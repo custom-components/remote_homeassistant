@@ -37,7 +37,6 @@ CONF_ACCESS_TOKEN = 'access_token'
 CONF_API_PASSWORD = 'api_password'
 CONF_SUBSCRIBE_EVENTS = 'subscribe_events'
 CONF_ENTITY_PREFIX = 'entity_prefix'
-CONF_STATE_ENTITY_NAME = 'state_entity_name'
 CONF_FILTER = 'filter'
 
 STATE_INIT = 'initializing'
@@ -54,7 +53,6 @@ DEFAULT_ENTITY_PREFIX = ''
 
 INSTANCES_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST): cv.string,
-    vol.Required(CONF_STATE_ENTITY_NAME): cv.string,
     vol.Optional(CONF_PORT, default=8123): cv.port,
     vol.Optional(CONF_SECURE, default=False): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
@@ -120,7 +118,6 @@ class RemoteConnection(object):
         """Initialize the connection."""
         self._hass = hass
         self._host = conf.get(CONF_HOST)
-        self._connection_state_entity = 'sensor.' + conf.get(CONF_STATE_ENTITY_NAME)
         self._port = conf.get(CONF_PORT)
         self._secure = conf.get(CONF_SECURE)
         self._verify_ssl = conf.get(CONF_VERIFY_SSL)
@@ -148,6 +145,13 @@ class RemoteConnection(object):
 
         self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS)
         self._entity_prefix = conf.get(CONF_ENTITY_PREFIX)
+
+        self._connection_state_entity = 'sensor.'
+
+        if self._entity_prefix != '':
+            self._connection_state_entity = '{}{}'.format(self._connection_state_entity, self._entity_prefix)
+
+        self._connection_state_entity = '{}remote_connection_{}_{}'.format(self._connection_state_entity, self._host.replace('.', '_').replace('-', '_'), self._port)
 
         self._connection = None
         self._entities = set()
@@ -234,8 +238,8 @@ class RemoteConnection(object):
             self._hass.states.async_remove(entity)
         if self._remove_listener is not None:
             self._remove_listener()
-        if self._connection_state_entity is not None:
-            self._hass.states.async_set(self._connection_state_entity, STATE_DISCONNECTED)
+
+        self._hass.states.async_set(self._connection_state_entity, STATE_DISCONNECTED)
         self._remove_listener = None
         self._entities = set()
         asyncio.ensure_future(self.async_connect())
