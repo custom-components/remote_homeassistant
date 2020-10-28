@@ -324,7 +324,10 @@ class RemoteConnection(object):
             if isinstance(entity_ids, str):
                 entity_ids = (entity_ids.lower(),)
 
-            entity_ids = self._entities.intersection(entity_ids)
+            entities = {entity_id.lower()
+                        for entity_id in self._entities}
+
+            entity_ids = entities.intersection(entity_ids)
 
             if not entity_ids:
                 return
@@ -332,7 +335,7 @@ class RemoteConnection(object):
             if self._entity_prefix:
                 def _remove_prefix(entity_id):
                     domain, object_id = split_entity_id(entity_id)
-                    object_id = object_id.replace(self._entity_prefix, '', 1)
+                    object_id = object_id.replace(self._entity_prefix.lower(), '', 1)
                     return domain + '.' + object_id
                 entity_ids = {_remove_prefix(entity_id)
                               for entity_id in entity_ids}
