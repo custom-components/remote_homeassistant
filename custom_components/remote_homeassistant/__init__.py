@@ -19,7 +19,7 @@ from homeassistant.core import callback, Context
 import homeassistant.components.websocket_api.auth as api
 from homeassistant.core import EventOrigin, split_entity_id
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
-from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
+from homeassistant.const import (CONF_HOST, CONF_PORT, CONF_TIMEOUT, EVENT_CALL_SERVICE,
                                  EVENT_HOMEASSISTANT_STOP,
                                  EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED,
                                  CONF_EXCLUDE, CONF_ENTITIES, CONF_ENTITY_ID,
@@ -54,6 +54,7 @@ DEFAULT_ENTITY_PREFIX = ''
 INSTANCES_SCHEMA = vol.Schema({
     vol.Required(CONF_HOST): cv.string,
     vol.Optional(CONF_PORT, default=8123): cv.port,
+    vol.Optional(CONF_TIMEOUT, default=300): cv.positive_int,
     vol.Optional(CONF_SECURE, default=False): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
     vol.Exclusive(CONF_ACCESS_TOKEN, 'auth'): cv.string,
@@ -119,6 +120,7 @@ class RemoteConnection(object):
         self._hass = hass
         self._host = conf.get(CONF_HOST)
         self._port = conf.get(CONF_PORT)
+        self._timeout = conf.get(CONF_TIMEOUT)
         self._secure = conf.get(CONF_SECURE)
         self._verify_ssl = conf.get(CONF_VERIFY_SSL)
         self._access_token = conf.get(CONF_ACCESS_TOKEN)
@@ -247,12 +249,13 @@ class RemoteConnection(object):
     async def _recv(self):
         while not self._connection.closed:
             try:
-                data = await self._connection.receive()
-            except aiohttp.client_exceptions.ClientError as err:
-                _LOGGER.error('remote websocket connection closed: %s', err)
+                data = await self._connection.receive(self._timeout)
+            except Exception as err:
+                _LOGGER.error('websocket receive error: %s', err)
                 break
 
             if not data:
+                _LOGGER.error('data is None')
                 break
 
             if data.type in (aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED):
@@ -270,6 +273,7 @@ class RemoteConnection(object):
                 break
 
             if message is None:
+                _LOGGER.error('message is None')
                 break
 
             _LOGGER.debug('received: %s', message)
