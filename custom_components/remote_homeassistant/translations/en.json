@@ -1,0 +1,25 @@
+{
+  "title": "Remote Home-Assistant",
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "secure": "Secure",
+          "verify_ssl": "Verify SSL",
+          "access_token": "Access token"
+        }
+      }
+    },
+    "error": {
+      "api_problem": "Bad response from server",
+      "cannot_connect": "Failed to connect to server",
+      "invalid_auth": "Invalid credentials",
+      "unknown": "An unknown error occurred"
+    },
+    "abort": {
+      "already_configured": "Already configured"
+    }
+  }
+}
