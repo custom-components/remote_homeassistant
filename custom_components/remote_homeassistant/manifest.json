@@ -3,12 +3,10 @@
   "name": "Remote Home-Assistant",
   "documentation": "https://github.com/lukas-hetzenecker/home-assistant-remote",
   "dependencies": [],
-  "config_flow": false,
+  "config_flow": true,
   "codeowners": [
     "@lukas-hetzenecker"
   ],
-  "requirements": [
-  ],
+  "requirements": [],
   "homeassistant": "0.96.0"
 }
-
