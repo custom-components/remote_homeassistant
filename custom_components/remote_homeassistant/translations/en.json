@@ -21,5 +21,43 @@
     "abort": {
       "already_configured": "Already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Basic Options",
+        "data": {
+            "entity_prefix": "Entity prefix"
+        }
+      },
+      "domain_entity_filters": {
+        "title": "Domain and entity filters",
+        "data": {
+          "include_domains": "Include domains",
+          "include_entities": "Include entities",
+          "exclude_domains": "Exclude domains",
+          "exclude_entities": "Exclude entities"
+        }
+      },
+      "general_filters": {
+        "title": "Filters",
+        "description": "Add a new filter by specifying `Entity ID`, one or more filter attributes and press `Submit`. Remove existing filters by unticking them in `Filters`.\n\nLeave `Entity ID` empty and press `Submit` to make no further changes.",
+        "data": {
+          "filter": "Filters",
+          "entity_id": "Entity ID",
+          "unit_of_measurement": "Unit of measurement",
+          "above": "Above",
+          "below": "Below"
+        }
+      },
+      "events": {
+        "title": "Subscribed events",
+        "description": "Add a new subscribed event by entering its name in `Add new event` and press `Submit`. Remove existing events by unticking them in `Events`.\n\nLeave `Add new event` and press `Submit` to make no further changes.",
+        "data": {
+            "subscribe_events": "Events",
+            "add_new_event": "Add new event"
+        }
+      }
+    }
   }
 }

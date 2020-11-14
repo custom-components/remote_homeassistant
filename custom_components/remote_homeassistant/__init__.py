@@ -30,7 +30,8 @@ from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
-from .const import DOMAIN
+from .const import (CONF_REMOTE_CONNECTION, CONF_UNSUB_LISTENER, CONF_INCLUDE_DOMAINS,
+                    CONF_INCLUDE_ENTITIES, CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES, DOMAIN)
 from .rest_api import async_get_discovery_info
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,17 +114,40 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Remote Home-Assistant from a config entry."""
-    remote = RemoteConnection(hass, entry.data, entry.unique_id)
-    hass.data[DOMAIN][entry.entry_id] = remote
+    # TODO: Temporary work-around until YAML import has been implemented
+    conf = entry.data.copy()
+    conf.update(entry.options)
+    conf[CONF_INCLUDE] = {
+        CONF_ENTITIES: conf.get(CONF_INCLUDE_ENTITIES, []),
+        CONF_DOMAINS: conf.get(CONF_INCLUDE_DOMAINS, [])
+    }
+    conf[CONF_EXCLUDE] = {
+        CONF_ENTITIES: conf.get(CONF_EXCLUDE_ENTITIES, []),
+        CONF_DOMAINS: conf.get(CONF_EXCLUDE_DOMAINS, [])
+    }
+
+    remote = RemoteConnection(hass, conf, entry.unique_id)
+
+    hass.data[DOMAIN][entry.entry_id] = {
+        CONF_REMOTE_CONNECTION: remote,
+        CONF_UNSUB_LISTENER: entry.add_update_listener(_update_listener)
+    }
+
     await remote.async_connect()
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
-    remote = hass.data[DOMAIN].pop(entry.entry_id)
-    await remote.async_stop()
+    data = hass.data[DOMAIN].pop(entry.entry_id)
+    await data[CONF_REMOTE_CONNECTION].async_stop()
+    data[CONF_UNSUB_LISTENER]()
     return True
+
+
+async def _update_listener(hass, config_entry):
+    """Update listener."""
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 
 class RemoteConnection(object):
@@ -159,8 +183,8 @@ class RemoteConnection(object):
             for f in conf.get(CONF_FILTER, [])
         ]
 
-        self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS)
-        self._entity_prefix = conf.get(CONF_ENTITY_PREFIX)
+        self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS, [])
+        self._entity_prefix = conf.get(CONF_ENTITY_PREFIX, "")
 
         self._connection_state_entity = 'sensor.'
 
@@ -172,6 +196,7 @@ class RemoteConnection(object):
         self._connection = None
         self._is_stopping = False
         self._entities = set()
+        self._all_entity_names = set()
         self._handlers = {}
         self._remove_listener = None
 
@@ -184,6 +209,7 @@ class RemoteConnection(object):
         }
 
         self._entities.add(self._connection_state_entity)
+        self._all_entity_names.add(self._connection_state_entity)
         self.set_connection_state(STATE_CONNECTING)
 
         self.__id = 1
@@ -296,6 +322,7 @@ class RemoteConnection(object):
         self.set_connection_state(STATE_DISCONNECTED)
         self._remove_listener = None
         self._entities = set()
+        self._all_entity_names = set()
         if not self._is_stopping:
             asyncio.ensure_future(self.async_connect())
 
@@ -421,6 +448,8 @@ class RemoteConnection(object):
             """Publish remote state change on local instance."""
             domain, object_id = split_entity_id(entity_id)
 
+            self._all_entity_names.add(entity_id)
+
             if (
                 entity_id in self._blacklist_e
                 or domain in self._blacklist_d
@@ -479,6 +508,8 @@ class RemoteConnection(object):
                     # entity was removed in the remote instance
                     with suppress(ValueError, AttributeError, KeyError):
                         self._entities.remove(entity_id)
+                    with suppress(ValueError, AttributeError, KeyError):
+                        self._all_entity_names.remove(entity_id)
                     self._hass.states.async_remove(entity_id)
                     return
 
