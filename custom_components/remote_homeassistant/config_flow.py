@@ -1,10 +1,12 @@
 """Config flow for Remote Home-Assistant integration."""
 import re
 import logging
+from urllib.parse import urlparse
 
 import voluptuous as vol
 
 from homeassistant import config_entries, core, exceptions
+from homeassistant.helpers.instance_id import async_get
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import (
     CONF_HOST,
@@ -40,16 +42,6 @@ ADD_NEW_EVENT = "add_new_event"
 
 FILTER_OPTIONS = [CONF_ENTITY_ID, CONF_UNIT_OF_MEASUREMENT, CONF_ABOVE, CONF_BELOW]
 
-DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_HOST): str,
-        vol.Optional(CONF_PORT, default=8123): int,
-        vol.Required(CONF_ACCESS_TOKEN): str,
-        vol.Optional(CONF_SECURE, default=True): bool,
-        vol.Optional(CONF_VERIFY_SSL, default=True): bool,
-    }
-)
-
 
 def _filter_str(index, filter):
     entity_id = filter[CONF_ENTITY_ID]
@@ -66,9 +58,9 @@ async def validate_input(hass: core.HomeAssistant, conf):
             hass,
             conf[CONF_HOST],
             conf[CONF_PORT],
-            conf[CONF_SECURE],
+            conf.get(CONF_SECURE, False),
             conf[CONF_ACCESS_TOKEN],
-            conf[CONF_VERIFY_SSL],
+            conf.get(CONF_VERIFY_SSL, False),
         )
     except OSError:
         raise CannotConnect()
@@ -81,6 +73,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
+
+    def __init__(self):
+        """Initialize a new ConfigFlow."""
+        self.prefill = {CONF_PORT: 8123, CONF_SECURE: True}
 
     @staticmethod
     @callback
@@ -108,9 +104,49 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=info["title"], data=user_input)
 
+        host = self.prefill.get(CONF_HOST) or vol.UNDEFINED
+        port = self.prefill.get(CONF_PORT) or vol.UNDEFINED
+        secure = self.prefill.get(CONF_SECURE) or vol.UNDEFINED
         return self.async_show_form(
-            step_id="user", data_schema=DATA_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=host): str,
+                    vol.Required(CONF_PORT, default=port): int,
+                    vol.Required(CONF_ACCESS_TOKEN): str,
+                    vol.Optional(CONF_SECURE, default=secure): bool,
+                    vol.Optional(CONF_VERIFY_SSL, default=True): bool,
+                }
+            ),
+            errors=errors,
         )
+
+    async def async_step_zeroconf(self, info):
+        """Handle instance discovered via zeroconf."""
+        properties = info["properties"]
+        uuid = properties["uuid"]
+
+        await self.async_set_unique_id(uuid)
+        self._abort_if_unique_id_configured()
+
+        if await async_get(self.hass) == uuid:
+            return self.async_abort(reason="already_configured")
+
+        url = properties.get("internal_url")
+        if not url:
+            url = properties.get("base_url")
+        url = urlparse(url)
+
+        self.prefill = {
+            CONF_HOST: url.hostname,
+            CONF_PORT: url.port,
+            CONF_SECURE: url.scheme == "https",
+        }
+
+        # pylint: disable=no-member # https://github.com/PyCQA/pylint/issues/3167
+        self.context["identifier"] = self.unique_id
+        self.context["title_placeholders"] = {"name": properties["location_name"]}
+        return await self.async_step_user()
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):

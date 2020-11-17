@@ -1,6 +1,7 @@
 {
-  "title": "Remote Home-Assistant",
   "config": {
+    "title": "Remote Home-Assistant",
+    "flow_title": "Remote: {name}",
     "step": {
       "user": {
         "data": {

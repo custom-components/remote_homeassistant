@@ -8,5 +8,8 @@
     "@lukas-hetzenecker"
   ],
   "requirements": [],
-  "homeassistant": "0.96.0"
+  "homeassistant": "0.96.0",
+  "zeroconf": [
+    "_home-assistant._tcp.local."
+  ]
 }
