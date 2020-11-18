@@ -46,6 +46,7 @@ CONF_FILTER = 'filter'
 STATE_INIT = 'initializing'
 STATE_CONNECTING = 'connecting'
 STATE_CONNECTED = 'connected'
+STATE_AUTH_FAILED = 'auth_failed'
 STATE_RECONNECTING = 'reconnecting'
 STATE_DISCONNECTED = 'disconnected'
 
@@ -283,7 +284,6 @@ class RemoteConnection(object):
             else:
                 _LOGGER.info(
                     'Connected to home-assistant websocket at %s', url)
-                self.set_connection_state(STATE_CONNECTED)
                 break
 
         self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop_handler)
@@ -357,6 +357,7 @@ class RemoteConnection(object):
             _LOGGER.debug('received: %s', message)
 
             if message['type'] == api.TYPE_AUTH_OK:
+                self.set_connection_state(STATE_CONNECTED)
                 await self._init()
 
             elif message['type'] == api.TYPE_AUTH_REQUIRED:
@@ -375,6 +376,7 @@ class RemoteConnection(object):
 
             elif message['type'] == api.TYPE_AUTH_INVALID:
                 _LOGGER.error('Auth invalid, check your access token or API password')
+                self.set_connection_state(STATE_AUTH_FAILED)
                 await self._connection.close()
                 return
 
