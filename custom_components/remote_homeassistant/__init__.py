@@ -47,6 +47,7 @@ STATE_INIT = 'initializing'
 STATE_CONNECTING = 'connecting'
 STATE_CONNECTED = 'connected'
 STATE_AUTH_INVALID = 'auth_invalid'
+STATE_AUTH_REQUIRED = 'auth_required'
 STATE_RECONNECTING = 'reconnecting'
 STATE_DISCONNECTED = 'disconnected'
 
@@ -363,6 +364,7 @@ class RemoteConnection(object):
             elif message['type'] == api.TYPE_AUTH_REQUIRED:
                 if not (self._access_token or self._password):
                     _LOGGER.error('Access token or api password required, but not provided')
+                    self.set_connection_state(STATE_AUTH_REQUIRED)
                     return
                 if self._access_token:
                    data = {'type': api.TYPE_AUTH, 'access_token': self._access_token}
