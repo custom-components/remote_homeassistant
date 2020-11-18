@@ -46,7 +46,7 @@ CONF_FILTER = 'filter'
 STATE_INIT = 'initializing'
 STATE_CONNECTING = 'connecting'
 STATE_CONNECTED = 'connected'
-STATE_AUTH_FAILED = 'auth_failed'
+STATE_AUTH_INVALID = 'auth_invalid'
 STATE_RECONNECTING = 'reconnecting'
 STATE_DISCONNECTED = 'disconnected'
 
@@ -376,7 +376,7 @@ class RemoteConnection(object):
 
             elif message['type'] == api.TYPE_AUTH_INVALID:
                 _LOGGER.error('Auth invalid, check your access token or API password')
-                self.set_connection_state(STATE_AUTH_FAILED)
+                self.set_connection_state(STATE_AUTH_INVALID)
                 await self._connection.close()
                 return
 
