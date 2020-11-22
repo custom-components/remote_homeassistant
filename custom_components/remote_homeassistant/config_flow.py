@@ -24,6 +24,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import callback
 
+from . import async_yaml_to_config_entry
 from .rest_api import ApiProblem, CannotConnect, InvalidAuth, async_get_discovery_info
 from .const import (
     CONF_REMOTE_CONNECTION,
@@ -159,31 +160,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.exception(f"import of {user_input[CONF_HOST]} failed")
             return self.async_abort(reason="import_failed")
 
-        conf = user_input.copy()
-        options = {}
-
-        if CONF_INCLUDE in conf:
-            include = conf.pop(CONF_INCLUDE)
-            if CONF_ENTITIES in include:
-                options[CONF_INCLUDE_ENTITIES] = include[CONF_ENTITIES]
-            if CONF_DOMAINS in include:
-                options[CONF_INCLUDE_DOMAINS] = include[CONF_DOMAINS]
-
-        if CONF_EXCLUDE in conf:
-            exclude = conf.pop(CONF_EXCLUDE)
-            if CONF_ENTITIES in exclude:
-                options[CONF_EXCLUDE_ENTITIES] = exclude[CONF_ENTITIES]
-            if CONF_DOMAINS in exclude:
-                options[CONF_EXCLUDE_DOMAINS] = exclude[CONF_DOMAINS]
-
-        if CONF_FILTER in conf:
-            options[CONF_FILTER] = conf.pop(CONF_FILTER)
-
-        if CONF_SUBSCRIBE_EVENTS in conf:
-            options[CONF_SUBSCRIBE_EVENTS] = conf.pop(CONF_SUBSCRIBE_EVENTS)
-
-        if CONF_ENTITY_PREFIX in conf:
-            options[CONF_ENTITY_PREFIX] = conf.pop(CONF_ENTITY_PREFIX)
+        conf, options = async_yaml_to_config_entry(user_input)
 
         # Options cannot be set here, so store them in a special key and import them
         # before setting up an entry

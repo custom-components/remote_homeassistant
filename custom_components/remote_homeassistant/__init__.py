@@ -25,9 +25,11 @@ from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
                                  EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED,
                                  CONF_EXCLUDE, CONF_ENTITIES, CONF_ENTITY_ID,
                                  CONF_DOMAINS, CONF_INCLUDE, CONF_UNIT_OF_MEASUREMENT,
-                                 CONF_ABOVE, CONF_BELOW, CONF_VERIFY_SSL, CONF_ACCESS_TOKEN)
+                                 CONF_ABOVE, CONF_BELOW, CONF_VERIFY_SSL, CONF_ACCESS_TOKEN,
+                                 SERVICE_RELOAD)
 from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.reload import async_integration_yaml_config
 import homeassistant.helpers.config_validation as cv
 
 from .const import (CONF_REMOTE_CONNECTION, CONF_UNSUB_LISTENER, CONF_INCLUDE_DOMAINS,
@@ -103,9 +105,84 @@ CONFIG_SCHEMA = vol.Schema({
 }, extra=vol.ALLOW_EXTRA)
 
 
+def async_yaml_to_config_entry(instance_conf):
+    """Convert YAML config into data and options used by a config entry."""
+    conf = instance_conf.copy()
+    options = {}
+
+    if CONF_INCLUDE in conf:
+        include = conf.pop(CONF_INCLUDE)
+        if CONF_ENTITIES in include:
+            options[CONF_INCLUDE_ENTITIES] = include[CONF_ENTITIES]
+        if CONF_DOMAINS in include:
+            options[CONF_INCLUDE_DOMAINS] = include[CONF_DOMAINS]
+
+    if CONF_EXCLUDE in conf:
+        exclude = conf.pop(CONF_EXCLUDE)
+        if CONF_ENTITIES in exclude:
+            options[CONF_EXCLUDE_ENTITIES] = exclude[CONF_ENTITIES]
+        if CONF_DOMAINS in exclude:
+            options[CONF_EXCLUDE_DOMAINS] = exclude[CONF_DOMAINS]
+
+    if CONF_FILTER in conf:
+        options[CONF_FILTER] = conf.pop(CONF_FILTER)
+
+    if CONF_SUBSCRIBE_EVENTS in conf:
+        options[CONF_SUBSCRIBE_EVENTS] = conf.pop(CONF_SUBSCRIBE_EVENTS)
+
+    if CONF_ENTITY_PREFIX in conf:
+        options[CONF_ENTITY_PREFIX] = conf.pop(CONF_ENTITY_PREFIX)
+
+    return conf, options
+
+
+async def _async_update_config_entry_if_from_yaml(hass, entries_by_id, conf):
+    """Update a config entry with the latest yaml."""
+    try:
+        info = await async_get_discovery_info(
+            hass,
+            conf[CONF_HOST],
+            conf[CONF_PORT],
+            conf[CONF_SECURE],
+            conf[CONF_ACCESS_TOKEN],
+            conf[CONF_VERIFY_SSL])
+    except Exception:
+        _LOGGER.exception(f"reload of {conf[CONF_HOST]} failed")
+    else:
+        entry = entries_by_id.get(info["uuid"])
+        if entry:
+            data, options = async_yaml_to_config_entry(conf)
+            hass.config_entries.async_update_entry(entry, data=data, options=options)
+
+
 async def async_setup(hass: HomeAssistantType, config: ConfigType):
     """Set up the remote_homeassistant component."""
     hass.data.setdefault(DOMAIN, {})
+
+    async def _handle_reload(service):
+        """Handle reload service call."""
+        config = await async_integration_yaml_config(hass, DOMAIN)
+
+        if not config or DOMAIN not in config:
+            return
+
+        current_entries = hass.config_entries.async_entries(DOMAIN)
+        entries_by_id = {entry.unique_id: entry for entry in current_entries}
+
+        instances = config[DOMAIN][CONF_INSTANCES]
+        update_tasks = [
+            _async_update_config_entry_if_from_yaml(hass, entries_by_id, instance)
+            for instance in instances
+        ]
+
+        await asyncio.gather(*update_tasks)
+
+    hass.helpers.service.async_register_admin_service(
+        DOMAIN,
+        SERVICE_RELOAD,
+        _handle_reload,
+    )
+
     instances = config.get(DOMAIN, {}).get(CONF_INSTANCES, [])
     for instance in instances:
         hass.async_create_task(
