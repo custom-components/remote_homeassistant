@@ -153,10 +153,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_import(self, user_input):
         """Handle import from YAML."""
-        if CONF_ACCESS_TOKEN not in user_input:
-            _LOGGER.error(f"No access_token specified for {user_input[CONF_HOST]}")
-            return self.async_abort(reason="import_failed")
-
         try:
             info = await validate_input(self.hass, user_input)
         except Exception:
