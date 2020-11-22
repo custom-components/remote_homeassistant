@@ -19,6 +19,8 @@ from homeassistant.const import (
     CONF_EXCLUDE,
     CONF_ABOVE,
     CONF_BELOW,
+    CONF_ENTITIES,
+    CONF_DOMAINS,
 )
 from homeassistant.core import callback
 
@@ -33,6 +35,7 @@ from .const import (
     CONF_INCLUDE_ENTITIES,
     CONF_EXCLUDE_DOMAINS,
     CONF_EXCLUDE_ENTITIES,
+    CONF_OPTIONS,
     DOMAIN,
 )  # pylint:disable=unused-import
 
@@ -147,6 +150,53 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.context["identifier"] = self.unique_id
         self.context["title_placeholders"] = {"name": properties["location_name"]}
         return await self.async_step_user()
+
+    async def async_step_import(self, user_input):
+        """Handle import from YAML."""
+        if CONF_ACCESS_TOKEN not in user_input:
+            _LOGGER.error(f"No access_token specified for {user_input[CONF_HOST]}")
+            return self.async_abort(reason="import_failed")
+
+        try:
+            info = await validate_input(self.hass, user_input)
+        except Exception:
+            _LOGGER.exception(f"import of {user_input[CONF_HOST]} failed")
+            return self.async_abort(reason="import_failed")
+
+        conf = user_input.copy()
+        options = {}
+
+        if CONF_INCLUDE in conf:
+            include = conf.pop(CONF_INCLUDE)
+            if CONF_ENTITIES in include:
+                options[CONF_INCLUDE_ENTITIES] = include[CONF_ENTITIES]
+            if CONF_DOMAINS in include:
+                options[CONF_INCLUDE_DOMAINS] = include[CONF_DOMAINS]
+
+        if CONF_EXCLUDE in conf:
+            exclude = conf.pop(CONF_EXCLUDE)
+            if CONF_ENTITIES in exclude:
+                options[CONF_EXCLUDE_ENTITIES] = exclude[CONF_ENTITIES]
+            if CONF_DOMAINS in exclude:
+                options[CONF_EXCLUDE_DOMAINS] = exclude[CONF_DOMAINS]
+
+        if CONF_FILTER in conf:
+            options[CONF_FILTER] = conf.pop(CONF_FILTER)
+
+        if CONF_SUBSCRIBE_EVENTS in conf:
+            options[CONF_SUBSCRIBE_EVENTS] = conf.pop(CONF_SUBSCRIBE_EVENTS)
+
+        if CONF_ENTITY_PREFIX in conf:
+            options[CONF_ENTITY_PREFIX] = conf.pop(CONF_ENTITY_PREFIX)
+
+        # Options cannot be set here, so store them in a special key and import them
+        # before setting up an entry
+        conf[CONF_OPTIONS] = options
+
+        await self.async_set_unique_id(info["uuid"])
+        self._abort_if_unique_id_configured(updates=conf)
+
+        return self.async_create_entry(title=f"{info['title']} (YAML)", data=conf)
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
