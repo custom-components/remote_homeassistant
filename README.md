@@ -33,7 +33,7 @@ If you use HACS:
 
 Otherwise:
 
-1. To use this plugin, copy the `remote_homeassistant` folder into your [custom_components folder](https://developers.home-assistant.io/docs/en/creating_component_loading.html).
+1. To use this plugin, copy the `remote_homeassistant` folder into your [custom_components folder](https://developers.home-assistant.io/docs/creating_integration_file_structure/#where-home-assistant-looks-for-integrations).
 2. Add `remote_homeassistant:` to your HA configuration.
 
 ## Configuration 
