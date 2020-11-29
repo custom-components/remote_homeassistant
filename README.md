@@ -63,7 +63,6 @@ remote_homeassistant:
     secure: true
     verify_ssl: false
     access_token: !secret access_token
-    api_password: !secret http_password
     entity_prefix: "instance02_"
     include:
       domains:
@@ -113,11 +112,7 @@ verify_ssl:
   type: bool
   default: true
 access_token:
-  description: Access token of the remote instance, if set. Mutually exclusive with api_password
-  required: false
-  type: string
-api_password:
-  description: DEPRECTAED! API password of the remote instance, if set. Mutually exclusive with access_token
+  description: Access token of the remote instance, if set.
   required: false
   type: string
 entity_prefix:

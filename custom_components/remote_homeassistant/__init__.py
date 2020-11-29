@@ -18,27 +18,29 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, callback, Context
 import homeassistant.components.websocket_api.auth as api
 from homeassistant.core import EventOrigin, split_entity_id
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.helpers.typing import HomeAssistantType, ConfigType
 from homeassistant.const import (CONF_HOST, CONF_PORT, EVENT_CALL_SERVICE,
                                  EVENT_HOMEASSISTANT_STOP,
                                  EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED,
                                  CONF_EXCLUDE, CONF_ENTITIES, CONF_ENTITY_ID,
                                  CONF_DOMAINS, CONF_INCLUDE, CONF_UNIT_OF_MEASUREMENT,
-                                 CONF_ABOVE, CONF_BELOW, CONF_VERIFY_SSL, CONF_ACCESS_TOKEN)
+                                 CONF_ABOVE, CONF_BELOW, CONF_VERIFY_SSL, CONF_ACCESS_TOKEN,
+                                 SERVICE_RELOAD)
 from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.reload import async_integration_yaml_config
 import homeassistant.helpers.config_validation as cv
 
 from .const import (CONF_REMOTE_CONNECTION, CONF_UNSUB_LISTENER, CONF_INCLUDE_DOMAINS,
-                    CONF_INCLUDE_ENTITIES, CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES, DOMAIN)
+                    CONF_INCLUDE_ENTITIES, CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES,
+                    CONF_OPTIONS, DOMAIN)
 from .rest_api import async_get_discovery_info
 
 _LOGGER = logging.getLogger(__name__)
 
 CONF_INSTANCES = 'instances'
 CONF_SECURE = 'secure'
-CONF_API_PASSWORD = 'api_password'
 CONF_SUBSCRIBE_EVENTS = 'subscribe_events'
 CONF_ENTITY_PREFIX = 'entity_prefix'
 CONF_FILTER = 'filter'
@@ -60,8 +62,7 @@ INSTANCES_SCHEMA = vol.Schema({
     vol.Optional(CONF_PORT, default=8123): cv.port,
     vol.Optional(CONF_SECURE, default=False): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
-    vol.Exclusive(CONF_ACCESS_TOKEN, 'auth'): cv.string,
-    vol.Exclusive(CONF_API_PASSWORD, 'auth'): cv.string,
+    vol.Required(CONF_ACCESS_TOKEN): cv.string,
     vol.Optional(CONF_EXCLUDE, default={}): vol.Schema(
         {
             vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
@@ -104,31 +105,98 @@ CONFIG_SCHEMA = vol.Schema({
 }, extra=vol.ALLOW_EXTRA)
 
 
+def async_yaml_to_config_entry(instance_conf):
+    """Convert YAML config into data and options used by a config entry."""
+    conf = instance_conf.copy()
+    options = {}
+
+    if CONF_INCLUDE in conf:
+        include = conf.pop(CONF_INCLUDE)
+        if CONF_ENTITIES in include:
+            options[CONF_INCLUDE_ENTITIES] = include[CONF_ENTITIES]
+        if CONF_DOMAINS in include:
+            options[CONF_INCLUDE_DOMAINS] = include[CONF_DOMAINS]
+
+    if CONF_EXCLUDE in conf:
+        exclude = conf.pop(CONF_EXCLUDE)
+        if CONF_ENTITIES in exclude:
+            options[CONF_EXCLUDE_ENTITIES] = exclude[CONF_ENTITIES]
+        if CONF_DOMAINS in exclude:
+            options[CONF_EXCLUDE_DOMAINS] = exclude[CONF_DOMAINS]
+
+    if CONF_FILTER in conf:
+        options[CONF_FILTER] = conf.pop(CONF_FILTER)
+
+    if CONF_SUBSCRIBE_EVENTS in conf:
+        options[CONF_SUBSCRIBE_EVENTS] = conf.pop(CONF_SUBSCRIBE_EVENTS)
+
+    if CONF_ENTITY_PREFIX in conf:
+        options[CONF_ENTITY_PREFIX] = conf.pop(CONF_ENTITY_PREFIX)
+
+    return conf, options
+
+
+async def _async_update_config_entry_if_from_yaml(hass, entries_by_id, conf):
+    """Update a config entry with the latest yaml."""
+    try:
+        info = await async_get_discovery_info(
+            hass,
+            conf[CONF_HOST],
+            conf[CONF_PORT],
+            conf[CONF_SECURE],
+            conf[CONF_ACCESS_TOKEN],
+            conf[CONF_VERIFY_SSL])
+    except Exception:
+        _LOGGER.exception(f"reload of {conf[CONF_HOST]} failed")
+    else:
+        entry = entries_by_id.get(info["uuid"])
+        if entry:
+            data, options = async_yaml_to_config_entry(conf)
+            hass.config_entries.async_update_entry(entry, data=data, options=options)
+
+
 async def async_setup(hass: HomeAssistantType, config: ConfigType):
     """Set up the remote_homeassistant component."""
     hass.data.setdefault(DOMAIN, {})
-    if DOMAIN in config:
-        for instance in config[DOMAIN].get(CONF_INSTANCES, []):
-            connection = RemoteConnection(hass, instance)
-            asyncio.ensure_future(connection.async_connect())
+
+    async def _handle_reload(service):
+        """Handle reload service call."""
+        config = await async_integration_yaml_config(hass, DOMAIN)
+
+        if not config or DOMAIN not in config:
+            return
+
+        current_entries = hass.config_entries.async_entries(DOMAIN)
+        entries_by_id = {entry.unique_id: entry for entry in current_entries}
+
+        instances = config[DOMAIN][CONF_INSTANCES]
+        update_tasks = [
+            _async_update_config_entry_if_from_yaml(hass, entries_by_id, instance)
+            for instance in instances
+        ]
+
+        await asyncio.gather(*update_tasks)
+
+    hass.helpers.service.async_register_admin_service(
+        DOMAIN,
+        SERVICE_RELOAD,
+        _handle_reload,
+    )
+
+    instances = config.get(DOMAIN, {}).get(CONF_INSTANCES, [])
+    for instance in instances:
+        hass.async_create_task(
+            hass.config_entries.flow.async_init(
+                DOMAIN, context={"source": SOURCE_IMPORT}, data=instance
+            )
+        )
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Remote Home-Assistant from a config entry."""
-    # TODO: Temporary work-around until YAML import has been implemented
-    conf = entry.data.copy()
-    conf.update(entry.options)
-    conf[CONF_INCLUDE] = {
-        CONF_ENTITIES: conf.get(CONF_INCLUDE_ENTITIES, []),
-        CONF_DOMAINS: conf.get(CONF_INCLUDE_DOMAINS, [])
-    }
-    conf[CONF_EXCLUDE] = {
-        CONF_ENTITIES: conf.get(CONF_EXCLUDE_ENTITIES, []),
-        CONF_DOMAINS: conf.get(CONF_EXCLUDE_DOMAINS, [])
-    }
-
-    remote = RemoteConnection(hass, conf, entry.unique_id)
+    _async_import_options_from_yaml(hass, entry)
+    remote = RemoteConnection(hass, entry)
 
     hass.data[DOMAIN][entry.entry_id] = {
         CONF_REMOTE_CONNECTION: remote,
@@ -147,6 +215,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     return True
 
 
+@callback
+def _async_import_options_from_yaml(hass: HomeAssistant, entry: ConfigEntry):
+    """Import options from YAML into options section of config entry."""
+    if CONF_OPTIONS in entry.data:
+        data = entry.data.copy()
+        options = data.pop(CONF_OPTIONS)
+        hass.config_entries.async_update_entry(entry, data=data, options=options)
+
+
 async def _update_listener(hass, config_entry):
     """Update listener."""
     await hass.config_entries.async_reload(config_entry.entry_id)
@@ -155,25 +232,20 @@ async def _update_listener(hass, config_entry):
 class RemoteConnection(object):
     """A Websocket connection to a remote home-assistant instance."""
 
-    def __init__(self, hass, conf, instance_uuid=None):
+    def __init__(self, hass, config_entry):
         """Initialize the connection."""
         self._hass = hass
-        self._host = conf.get(CONF_HOST)
-        self._port = conf.get(CONF_PORT)
-        self._secure = conf.get(CONF_SECURE)
-        self._verify_ssl = conf.get(CONF_VERIFY_SSL)
-        self._access_token = conf.get(CONF_ACCESS_TOKEN)
-        self._password = conf.get(CONF_API_PASSWORD)
-        self._instance_uuid = instance_uuid
+        self._entry = config_entry
+        self._secure = config_entry.data.get(CONF_SECURE, False)
+        self._verify_ssl = config_entry.data.get(CONF_VERIFY_SSL, False)
+        self._access_token = config_entry.data.get(CONF_ACCESS_TOKEN)
 
         # see homeassistant/components/influxdb/__init__.py
         # for include/exclude logic
-        include = conf.get(CONF_INCLUDE, {})
-        exclude = conf.get(CONF_EXCLUDE, {})
-        self._whitelist_e = set(include.get(CONF_ENTITIES, []))
-        self._whitelist_d = set(include.get(CONF_DOMAINS, []))
-        self._blacklist_e = set(exclude.get(CONF_ENTITIES, []))
-        self._blacklist_d = set(exclude.get(CONF_DOMAINS, []))
+        self._whitelist_e = set(config_entry.options.get(CONF_INCLUDE_ENTITIES, []))
+        self._whitelist_d = set(config_entry.options.get(CONF_INCLUDE_DOMAINS, []))
+        self._blacklist_e = set(config_entry.options.get(CONF_EXCLUDE_ENTITIES, []))
+        self._blacklist_d = set(config_entry.options.get(CONF_EXCLUDE_DOMAINS, []))
 
         self._filter = [
             {
@@ -182,18 +254,18 @@ class RemoteConnection(object):
                 CONF_ABOVE: f.get(CONF_ABOVE),
                 CONF_BELOW: f.get(CONF_BELOW)
             }
-            for f in conf.get(CONF_FILTER, [])
+            for f in config_entry.options.get(CONF_FILTER, [])
         ]
 
-        self._subscribe_events = conf.get(CONF_SUBSCRIBE_EVENTS, [])
-        self._entity_prefix = conf.get(CONF_ENTITY_PREFIX, "")
+        self._subscribe_events = config_entry.options.get(CONF_SUBSCRIBE_EVENTS, [])
+        self._entity_prefix = config_entry.options.get(CONF_ENTITY_PREFIX, "")
 
         self._connection_state_entity = 'sensor.'
 
         if self._entity_prefix != '':
             self._connection_state_entity = '{}{}'.format(self._connection_state_entity, self._entity_prefix)
 
-        self._connection_state_entity = '{}remote_connection_{}_{}'.format(self._connection_state_entity, self._host.replace('.', '_').replace('-', '_'), self._port)
+        self._connection_state_entity = '{}remote_connection_{}_{}'.format(self._connection_state_entity, self._entry.data[CONF_HOST].replace('.', '_').replace('-', '_'), self._entry.data[CONF_PORT])
 
         self._connection = None
         self._is_stopping = False
@@ -203,11 +275,12 @@ class RemoteConnection(object):
         self._remove_listener = None
 
         self._instance_attrs = {
-            'host': self._host,
-            'port': self._port,
+            'host': self._entry.data[CONF_HOST],
+            'port': self._entry.data[CONF_PORT],
             'secure': self._secure,
             'verify_ssl': self._verify_ssl,
-            'entity_prefix': self._entity_prefix
+            'entity_prefix': self._entity_prefix,
+            'uuid': config_entry.unique_id,
         }
 
         self._entities.add(self._connection_state_entity)
@@ -232,7 +305,7 @@ class RemoteConnection(object):
     def _get_url(self):
         """Get url to connect to."""
         return '%s://%s:%s/api/websocket' % (
-            'wss' if self._secure else 'ws', self._host, self._port)
+            'wss' if self._secure else 'ws', self._entry.data[CONF_HOST], self._entry.data[CONF_PORT])
 
     async def async_connect(self):
         """Connect to remote home-assistant websocket..."""
@@ -242,14 +315,11 @@ class RemoteConnection(object):
 
         async def _async_instance_id_match():
             """Verify if remote instance id matches the expected id."""
-            if not self._instance_uuid:
-                return True
-
             try:
                 info = await async_get_discovery_info(
                     self._hass,
-                    self._host,
-                    self._port,
+                    self._entry.data[CONF_HOST],
+                    self._entry.data[CONF_PORT],
                     self._secure,
                     self._access_token,
                     self._verify_ssl)
@@ -257,8 +327,8 @@ class RemoteConnection(object):
                 _LOGGER.exception("failed to verify instance id")
                 return False
             else:
-                if info["uuid"] != self._instance_uuid:
-                    _LOGGER.error("instance id not matching: %s != %s", info["uuid"], self._instance_uuid)
+                if info["uuid"] != self._entry.unique_id:
+                    _LOGGER.error("instance id not matching: %s != %s", info["uuid"], self._entry.unique_id)
                     return False
             return True
 
@@ -277,7 +347,7 @@ class RemoteConnection(object):
             try:
                 _LOGGER.info('Connecting to %s', url)
                 self._connection = await session.ws_connect(url)
-            except aiohttp.client_exceptions.ClientError as err:
+            except aiohttp.client_exceptions.ClientError:
                 _LOGGER.error(
                    'Could not connect to %s, retry in 10 seconds...', url)
                 self.set_connection_state(STATE_RECONNECTING)
@@ -362,14 +432,12 @@ class RemoteConnection(object):
                 await self._init()
 
             elif message['type'] == api.TYPE_AUTH_REQUIRED:
-                if not (self._access_token or self._password):
-                    _LOGGER.error('Access token or api password required, but not provided')
-                    self.set_connection_state(STATE_AUTH_REQUIRED)
-                    return
                 if self._access_token:
                    data = {'type': api.TYPE_AUTH, 'access_token': self._access_token}
                 else:
-                   data = {'type': api.TYPE_AUTH, 'api_password': self._password}
+                   _LOGGER.error('Access token required, but not provided')
+                   self.set_connection_state(STATE_AUTH_REQUIRED)
+                   return
                 try:
                    await self._connection.send_json(data)
                 except Exception as err:
@@ -377,7 +445,7 @@ class RemoteConnection(object):
                    break
 
             elif message['type'] == api.TYPE_AUTH_INVALID:
-                _LOGGER.error('Auth invalid, check your access token or API password')
+                _LOGGER.error('Auth invalid, check your access token')
                 self.set_connection_state(STATE_AUTH_INVALID)
                 await self._connection.close()
                 return

@@ -19,9 +19,12 @@ from homeassistant.const import (
     CONF_EXCLUDE,
     CONF_ABOVE,
     CONF_BELOW,
+    CONF_ENTITIES,
+    CONF_DOMAINS,
 )
 from homeassistant.core import callback
 
+from . import async_yaml_to_config_entry
 from .rest_api import ApiProblem, CannotConnect, InvalidAuth, async_get_discovery_info
 from .const import (
     CONF_REMOTE_CONNECTION,
@@ -33,6 +36,7 @@ from .const import (
     CONF_INCLUDE_ENTITIES,
     CONF_EXCLUDE_DOMAINS,
     CONF_EXCLUDE_ENTITIES,
+    CONF_OPTIONS,
     DOMAIN,
 )  # pylint:disable=unused-import
 
@@ -147,6 +151,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.context["identifier"] = self.unique_id
         self.context["title_placeholders"] = {"name": properties["location_name"]}
         return await self.async_step_user()
+
+    async def async_step_import(self, user_input):
+        """Handle import from YAML."""
+        try:
+            info = await validate_input(self.hass, user_input)
+        except Exception:
+            _LOGGER.exception(f"import of {user_input[CONF_HOST]} failed")
+            return self.async_abort(reason="import_failed")
+
+        conf, options = async_yaml_to_config_entry(user_input)
+
+        # Options cannot be set here, so store them in a special key and import them
+        # before setting up an entry
+        conf[CONF_OPTIONS] = options
+
+        await self.async_set_unique_id(info["uuid"])
+        self._abort_if_unique_id_configured(updates=conf)
+
+        return self.async_create_entry(title=f"{info['title']} (YAML)", data=conf)
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
