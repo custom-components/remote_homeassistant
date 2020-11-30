@@ -104,6 +104,9 @@ CONFIG_SCHEMA = vol.Schema({
     }),
 }, extra=vol.ALLOW_EXTRA)
 
+HEARTBEAT_INTERVAL = 20
+HEARTBEAT_TIMEOUT = 5
+
 
 def async_yaml_to_config_entry(instance_conf):
     """Convert YAML config into data and options used by a config entry."""
@@ -268,6 +271,7 @@ class RemoteConnection(object):
         self._connection_state_entity = '{}remote_connection_{}_{}'.format(self._connection_state_entity, self._entry.data[CONF_HOST].replace('.', '_').replace('-', '_'), self._entry.data[CONF_PORT])
 
         self._connection = None
+        self._heartbeat_task = None
         self._is_stopping = False
         self._entities = set()
         self._all_entity_names = set()
@@ -360,6 +364,29 @@ class RemoteConnection(object):
         self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop_handler)
 
         asyncio.ensure_future(self._recv())
+        self._heartbeat_task = self._hass.loop.create_task(self._heartbeat_loop())
+
+    async def _heartbeat_loop(self):
+        """Send periodic heartbeats to remote instance."""
+        while not self._connection.closed:
+            await asyncio.sleep(HEARTBEAT_INTERVAL)
+
+            _LOGGER.debug("Sending ping")
+            event = asyncio.Event()
+            def resp(message):
+                _LOGGER.debug("Got pong: %s", message)
+                event.set()
+
+            await self._call(resp, "ping")
+
+            try:
+                await asyncio.wait_for(event.wait(), HEARTBEAT_TIMEOUT)
+            except asyncio.TimeoutError:
+                _LOGGER.error("heartbeat failed")
+
+                # Schedule closing on event loop to avoid deadlock
+                asyncio.ensure_future(self._connection.close())
+                break
 
     async def async_stop(self):
         """Close connection."""
@@ -387,10 +414,14 @@ class RemoteConnection(object):
         # Remove all published entries
         for entity in self._entities:
             self._hass.states.async_remove(entity)
+        if self._heartbeat_task is not None:
+            self._heartbeat_task.cancel()
+            await self._heartbeat_task
         if self._remove_listener is not None:
             self._remove_listener()
 
         self.set_connection_state(STATE_DISCONNECTED)
+        self._heartbeat_task = None
         self._remove_listener = None
         self._entities = set()
         self._all_entity_names = set()
