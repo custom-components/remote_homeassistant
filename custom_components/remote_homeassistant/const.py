@@ -3,6 +3,7 @@
 CONF_REMOTE_CONNECTION = "remote_connection"
 CONF_UNSUB_LISTENER = "unsub_listener"
 CONF_OPTIONS = "options"
+CONF_REMOTE_INFO = "remote_info"
 
 CONF_FILTER = "filter"
 CONF_SECURE = "secure"
