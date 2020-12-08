@@ -3,6 +3,9 @@
 [![hacs][hacsbadge]](hacs)
 ![Project Maintenance][maintenance-shield]
 
+<img align="left" width="80" height="80" src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/icons/icon.png" alt="App icon">
+
+# Remote Home-Assistant
 
 _Component to link multiple Home-Assistant instances together._
 
@@ -29,7 +32,6 @@ A possible use case for this is to be able to use different Z-Wave networks, on 
 If you use HACS:
 
 1. Click install.
-2. Add `remote_homeassistant:` to your HA configuration.
 
 Otherwise:
 
@@ -37,6 +39,42 @@ Otherwise:
 2. Add `remote_homeassistant:` to your HA configuration.
 
 ## Configuration 
+
+### Web (Config flow)
+
+1. Add a new Remote Home-Assistant integration
+
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/setup.png" height="400"/>
+
+2. Specify the connection details to the remove instance
+
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/device.png" height="400"/>
+
+You can generate an access token in the by logging into your remote instance, clicking on your user profile icon, and then selecting "Create Token" under "Long-Lived Access Tokens".
+
+Check "Secure" if you want to connect via a secure (https/wss) connection
+
+3. After the instance is added, you can configure additional Options by clicking the "Options" button.
+
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/options.png" height="200"/>
+
+4. You can configure an optional prefix that gets prepended to all remote entities (if unsure, leave this blank).
+
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/step1.png" height="200"/>
+
+Click "Submit" to proceed to the next step.
+
+5. You can also define filters, that include/exclude specified entities or domains from the remote instance.
+
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/step2.png" height="200"/>
+
+
+
+---
+
+or via..
+
+### YAML
 
 To integrate `remote_homeassistant` into Home Assistant, add the following section to your `configuration.yaml` file:
 
