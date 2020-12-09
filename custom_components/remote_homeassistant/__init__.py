@@ -58,7 +58,7 @@ from .const import (
     CONF_REMOTE_INFO,
     DOMAIN,
 )
-from .rest_api import async_get_discovery_info
+from .rest_api import UnsupportedVersion, async_get_discovery_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -371,14 +371,20 @@ class RemoteConnection(object):
                     self._access_token,
                     self._verify_ssl,
                 )
+            except OSError:
+                _LOGGER.exception("failed to connect")
+            except UnsupportedVersion:
+                _LOGGER.error("Unsupported version, at least 0.111 is required.")
             except Exception:
                 _LOGGER.exception("failed to fetch instance info")
-                return None
+            return None
 
         @callback
         def _async_instance_id_match(info):
             """Verify if remote instance id matches the expected id."""
-            if info["uuid"] != self._entry.unique_id:
+            if not info:
+                return False
+            if info and info["uuid"] != self._entry.unique_id:
                 _LOGGER.error(
                     "instance id not matching: %s != %s",
                     info["uuid"],
@@ -395,8 +401,8 @@ class RemoteConnection(object):
         while True:
             info = await _async_instance_get_info()
 
-            # If an instance id is set, verify we are talking to correct instance
-            if not (info or _async_instance_id_match(info)):
+            # Verify we are talking to correct instance
+            if not _async_instance_id_match(info):
                 self.set_connection_state(STATE_RECONNECTING)
                 await asyncio.sleep(10)
                 continue
@@ -434,6 +440,7 @@ class RemoteConnection(object):
 
             _LOGGER.debug("Sending ping")
             event = asyncio.Event()
+
             def resp(message):
                 _LOGGER.debug("Got pong: %s", message)
                 event.set()
@@ -477,7 +484,10 @@ class RemoteConnection(object):
             self._hass.states.async_remove(entity)
         if self._heartbeat_task is not None:
             self._heartbeat_task.cancel()
-            await self._heartbeat_task
+            try:
+                await self._heartbeat_task
+            except asyncio.CancelledError:
+                pass
         if self._remove_listener is not None:
             self._remove_listener()
 

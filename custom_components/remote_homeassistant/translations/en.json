@@ -17,6 +17,7 @@
       "api_problem": "Bad response from server",
       "cannot_connect": "Failed to connect to server",
       "invalid_auth": "Invalid credentials",
+      "unsupported_version": "Unsupported version. At least version 0.111 is required.",
       "unknown": "An unknown error occurred"
     },
     "abort": {
