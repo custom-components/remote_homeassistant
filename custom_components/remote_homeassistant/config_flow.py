@@ -25,7 +25,13 @@ from homeassistant.const import (
 from homeassistant.core import callback
 
 from . import async_yaml_to_config_entry
-from .rest_api import ApiProblem, CannotConnect, InvalidAuth, async_get_discovery_info
+from .rest_api import (
+    ApiProblem,
+    CannotConnect,
+    InvalidAuth,
+    UnsupportedVersion,
+    async_get_discovery_info,
+)
 from .const import (
     CONF_REMOTE_CONNECTION,
     CONF_SECURE,
@@ -100,6 +106,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
+            except UnsupportedVersion:
+                errors["base"] = "unsupported_version"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
