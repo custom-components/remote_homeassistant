@@ -35,6 +35,7 @@ from .rest_api import (
 from .const import (
     CONF_REMOTE_CONNECTION,
     CONF_SECURE,
+    CONF_LOAD_COMPONENTS,
     CONF_FILTER,
     CONF_SUBSCRIBE_EVENTS,
     CONF_ENTITY_PREFIX,
@@ -196,6 +197,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.options = user_input.copy()
             return await self.async_step_domain_entity_filters()
 
+        domains, _ = self._domains_and_entities()
+        domains = set(domains + self.config_entry.options.get(CONF_LOAD_COMPONENTS, []))
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -207,7 +210,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                 CONF_ENTITY_PREFIX
                             )
                         },
-                    ): str
+                    ): str,
+                    vol.Optional(
+                        CONF_LOAD_COMPONENTS,
+                        default=self._default(CONF_LOAD_COMPONENTS),
+                    ): cv.multi_select(sorted(domains)),
                 }
             ),
         )

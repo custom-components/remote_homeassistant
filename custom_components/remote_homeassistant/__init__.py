@@ -46,6 +46,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.reload import async_integration_yaml_config
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.setup import async_setup_component
 
 from .const import (
     CONF_REMOTE_CONNECTION,
@@ -56,6 +57,7 @@ from .const import (
     CONF_EXCLUDE_ENTITIES,
     CONF_OPTIONS,
     CONF_REMOTE_INFO,
+    CONF_LOAD_COMPONENTS,
     DOMAIN,
 )
 from .rest_api import UnsupportedVersion, async_get_discovery_info
@@ -121,6 +123,7 @@ INSTANCES_SCHEMA = vol.Schema(
             CONF_SUBSCRIBE_EVENTS, default=DEFAULT_SUBSCRIBED_EVENTS
         ): cv.ensure_list,
         vol.Optional(CONF_ENTITY_PREFIX, default=DEFAULT_ENTITY_PREFIX): cv.string,
+        vol.Optional(CONF_LOAD_COMPONENTS): cv.ensure_list,
     }
 )
 
@@ -160,14 +163,14 @@ def async_yaml_to_config_entry(instance_conf):
         if CONF_DOMAINS in exclude:
             options[CONF_EXCLUDE_DOMAINS] = exclude[CONF_DOMAINS]
 
-    if CONF_FILTER in conf:
-        options[CONF_FILTER] = conf.pop(CONF_FILTER)
-
-    if CONF_SUBSCRIBE_EVENTS in conf:
-        options[CONF_SUBSCRIBE_EVENTS] = conf.pop(CONF_SUBSCRIBE_EVENTS)
-
-    if CONF_ENTITY_PREFIX in conf:
-        options[CONF_ENTITY_PREFIX] = conf.pop(CONF_ENTITY_PREFIX)
+    for option in [
+        CONF_FILTER,
+        CONF_SUBSCRIBE_EVENTS,
+        CONF_ENTITY_PREFIX,
+        CONF_LOAD_COMPONENTS,
+    ]:
+        if option in conf:
+            options[option] = conf.pop(option)
 
     return conf, options
 
@@ -240,15 +243,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         CONF_UNSUB_LISTENER: entry.add_update_listener(_update_listener),
     }
 
-    async def setup_platforms():
+    async def setup_components_and_platforms():
         """Set up platforms and initiate connection."""
+        for domain in entry.options.get(CONF_LOAD_COMPONENTS, []):
+            hass.async_create_task(async_setup_component(hass, domain, {}))
         for component in PLATFORMS:
             hass.async_create_task(
                 hass.config_entries.async_forward_entry_setup(entry, component)
             )
         await remote.async_connect()
 
-    hass.async_create_task(setup_platforms())
+    hass.async_create_task(setup_components_and_platforms())
 
     return True
 

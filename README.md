@@ -129,6 +129,8 @@ remote_homeassistant:
     - service_registered
     - zwave.network_ready
     - zwave.node_event
+    load_components:
+    - zwave
 ```
 
 ```
@@ -206,19 +208,27 @@ subscribe_events:
   default: 
   - state_changed
   - service_registered
+load_components:
+  description: Load components of specified domains only present on the remote instance, e.g. to register services that would otherwise not be available.
+  required: false
+  type: list
 ```
 
 ## Special notes 
 
-If you have remote domains (e.g. `switch`), that are not loaded on the master instance you need to add a dummy entry on the master, otherwise you'll get a `Call service failed` error.
+If you have remote domains (e.g. `switch`), that are not loaded on the master instance you need to list them under `load_components`, otherwise you'll get a `Call service failed` error.
 
 E.g. on the master:
 
 ```
-switch:
+remote_homeassistant:
+  instances:
+  - host: 10.0.0.2
+    load_components:
+    - zwave
 ```
 
-to enable all `switch` services.
+to enable all `zwave` services. This can also be configured via options under Configuration->Integrations.
 
 ---
 
