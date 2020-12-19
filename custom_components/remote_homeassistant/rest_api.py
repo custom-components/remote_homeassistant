@@ -1,10 +1,7 @@
 """Simple implementation to call Home Assistant REST API."""
 
 from homeassistant import exceptions
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL, CONF_ACCESS_TOKEN
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
-from .const import CONF_SECURE
 
 API_URL = "{proto}://{host}:{port}/api/"
 

@@ -1,11 +1,10 @@
 """Config flow for Remote Home-Assistant integration."""
-import re
 import logging
 from urllib.parse import urlparse
 
 import voluptuous as vol
 
-from homeassistant import config_entries, core, exceptions
+from homeassistant import config_entries, core
 from homeassistant.helpers.instance_id import async_get
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import (
@@ -15,14 +14,11 @@ from homeassistant.const import (
     CONF_ACCESS_TOKEN,
     CONF_ENTITY_ID,
     CONF_UNIT_OF_MEASUREMENT,
-    CONF_INCLUDE,
-    CONF_EXCLUDE,
     CONF_ABOVE,
     CONF_BELOW,
-    CONF_ENTITIES,
-    CONF_DOMAINS,
 )
 from homeassistant.core import callback
+from homeassistant.util import slugify
 
 from . import async_yaml_to_config_entry
 from .rest_api import (
@@ -36,6 +32,8 @@ from .const import (
     CONF_REMOTE_CONNECTION,
     CONF_SECURE,
     CONF_LOAD_COMPONENTS,
+    CONF_SERVICE_PREFIX,
+    CONF_SERVICES,
     CONF_FILTER,
     CONF_SUBSCRIBE_EVENTS,
     CONF_ENTITY_PREFIX,
@@ -190,6 +188,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.filters = None
         self.events = None
         self.options = None
+        self.remote = self.hass.data[DOMAIN][self.config_entry.entry_id][
+            CONF_REMOTE_CONNECTION
+        ]
 
     async def async_step_init(self, user_input=None):
         """Manage basic options."""
@@ -199,6 +200,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         domains, _ = self._domains_and_entities()
         domains = set(domains + self.config_entry.options.get(CONF_LOAD_COMPONENTS, []))
+
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -215,6 +217,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_LOAD_COMPONENTS,
                         default=self._default(CONF_LOAD_COMPONENTS),
                     ): cv.multi_select(sorted(domains)),
+                    vol.Required(
+                        CONF_SERVICE_PREFIX, default=slugify(self.config_entry.title)
+                    ): str,
+                    vol.Optional(
+                        CONF_SERVICES,
+                        default=self._default(CONF_SERVICES),
+                    ): cv.multi_select(self.remote.proxy_services.services),
                 }
             ),
         )

@@ -8,6 +8,7 @@ import fnmatch
 import logging
 import copy
 import asyncio
+import inspect
 from contextlib import suppress
 
 import aiohttp
@@ -37,7 +38,6 @@ from homeassistant.const import (
     CONF_BELOW,
     CONF_VERIFY_SSL,
     CONF_ACCESS_TOKEN,
-    CONF_STATE,
     SERVICE_RELOAD,
 )
 from homeassistant.config import DATA_CUSTOMIZE
@@ -56,11 +56,13 @@ from .const import (
     CONF_EXCLUDE_DOMAINS,
     CONF_EXCLUDE_ENTITIES,
     CONF_OPTIONS,
-    CONF_REMOTE_INFO,
     CONF_LOAD_COMPONENTS,
+    CONF_SERVICE_PREFIX,
+    CONF_SERVICES,
     DOMAIN,
 )
 from .rest_api import UnsupportedVersion, async_get_discovery_info
+from .proxy_services import ProxyServices
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -124,6 +126,8 @@ INSTANCES_SCHEMA = vol.Schema(
         ): cv.ensure_list,
         vol.Optional(CONF_ENTITY_PREFIX, default=DEFAULT_ENTITY_PREFIX): cv.string,
         vol.Optional(CONF_LOAD_COMPONENTS): cv.ensure_list,
+        vol.Required(CONF_SERVICE_PREFIX, default="remote_"): cv.string,
+        vol.Optional(CONF_SERVICES): cv.ensure_list,
     }
 )
 
@@ -168,6 +172,8 @@ def async_yaml_to_config_entry(instance_conf):
         CONF_SUBSCRIBE_EVENTS,
         CONF_ENTITY_PREFIX,
         CONF_LOAD_COMPONENTS,
+        CONF_SERVICE_PREFIX,
+        CONF_SERVICES,
     ]:
         if option in conf:
             options[option] = conf.pop(option)
@@ -331,6 +337,7 @@ class RemoteConnection(object):
         self._all_entity_names = set()
         self._handlers = {}
         self._remove_listener = None
+        self.proxy_services = ProxyServices(hass, config_entry, self)
 
         self.set_connection_state(STATE_CONNECTING)
 
@@ -450,7 +457,7 @@ class RemoteConnection(object):
                 _LOGGER.debug("Got pong: %s", message)
                 event.set()
 
-            await self._call(resp, "ping")
+            await self.call(resp, "ping")
 
             try:
                 await asyncio.wait_for(event.wait(), HEARTBEAT_TIMEOUT)
@@ -466,13 +473,14 @@ class RemoteConnection(object):
         self._is_stopping = True
         if self._connection is not None:
             await self._connection.close()
+        await self.proxy_services.unload()
 
     def _next_id(self):
         _id = self.__id
         self.__id += 1
         return _id
 
-    async def _call(self, callback, message_type, **extra_args):
+    async def call(self, callback, message_type, **extra_args):
         _id = self._next_id()
         self._handlers[_id] = callback
         try:
@@ -564,7 +572,10 @@ class RemoteConnection(object):
             else:
                 callback = self._handlers.get(message["id"])
                 if callback is not None:
-                    callback(message)
+                    if inspect.iscoroutinefunction(callback):
+                        await callback(message)
+                    else:
+                        callback(message)
 
         await self._disconnected()
 
@@ -727,6 +738,8 @@ class RemoteConnection(object):
         )
 
         for event in self._subscribe_events:
-            await self._call(fire_event, "subscribe_events", event_type=event)
+            await self.call(fire_event, "subscribe_events", event_type=event)
 
-        await self._call(got_states, "get_states")
+        await self.call(got_states, "get_states")
+
+        await self.proxy_services.load()
