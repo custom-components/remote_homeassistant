@@ -80,7 +80,6 @@ STATE_AUTH_REQUIRED = "auth_required"
 STATE_RECONNECTING = "reconnecting"
 STATE_DISCONNECTED = "disconnected"
 
-DEFAULT_SUBSCRIBED_EVENTS = [EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED]
 DEFAULT_ENTITY_PREFIX = ""
 
 INSTANCES_SCHEMA = vol.Schema(
@@ -119,9 +118,7 @@ INSTANCES_SCHEMA = vol.Schema(
                 )
             ],
         ),
-        vol.Optional(
-            CONF_SUBSCRIBE_EVENTS, default=DEFAULT_SUBSCRIBED_EVENTS
-        ): cv.ensure_list,
+        vol.Optional(CONF_SUBSCRIBE_EVENTS): cv.ensure_list,
         vol.Optional(CONF_ENTITY_PREFIX, default=DEFAULT_ENTITY_PREFIX): cv.string,
         vol.Optional(CONF_LOAD_COMPONENTS): cv.ensure_list,
     }
@@ -142,6 +139,8 @@ CONFIG_SCHEMA = vol.Schema(
 
 HEARTBEAT_INTERVAL = 20
 HEARTBEAT_TIMEOUT = 5
+
+INTERNALLY_USED_EVENTS = [EVENT_STATE_CHANGED, EVENT_SERVICE_REGISTERED]
 
 
 def async_yaml_to_config_entry(instance_conf):
@@ -321,7 +320,9 @@ class RemoteConnection(object):
             for f in config_entry.options.get(CONF_FILTER, [])
         ]
 
-        self._subscribe_events = config_entry.options.get(CONF_SUBSCRIBE_EVENTS, [])
+        self._subscribe_events = set(
+            config_entry.options.get(CONF_SUBSCRIBE_EVENTS, []) + INTERNALLY_USED_EVENTS
+        )
         self._entity_prefix = config_entry.options.get(CONF_ENTITY_PREFIX, "")
 
         self._connection = None
