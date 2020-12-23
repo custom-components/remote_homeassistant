@@ -5,6 +5,8 @@ CONF_UNSUB_LISTENER = "unsub_listener"
 CONF_OPTIONS = "options"
 CONF_REMOTE_INFO = "remote_info"
 CONF_LOAD_COMPONENTS = "load_components"
+CONF_SERVICE_PREFIX = "service_prefix"
+CONF_SERVICES = "services"
 
 CONF_FILTER = "filter"
 CONF_SECURE = "secure"

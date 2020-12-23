@@ -212,9 +212,20 @@ load_components:
   description: Load components of specified domains only present on the remote instance, e.g. to register services that would otherwise not be available.
   required: false
   type: list
+service_prefix: garage_
+  description: Prefix used for proxy services. Must be unique for all instances.
+  required: false
+  type: str
+  default: remote_
+services:
+  description: Name of services to set up proxy services for.
+  required: false
+  type: list
 ```
 
 ## Special notes 
+
+### Missing Components
 
 If you have remote domains (e.g. `switch`), that are not loaded on the master instance you need to list them under `load_components`, otherwise you'll get a `Call service failed` error.
 
@@ -229,6 +240,37 @@ remote_homeassistant:
 ```
 
 to enable all `zwave` services. This can also be configured via options under Configuration->Integrations.
+
+### Proxy Services
+
+Some components do not use entities to handle service calls, but handle the
+service calls themselves. One such example is `hdmi_cec`. This becomes a
+problem as it is not possible to forward the service calls properly. To work
+around this limitation, it's possible to set up a *proxy service*.
+
+A proxy service is registered like a new service on the master instance, but
+it mirrors a service on the remote instance. When the proxy service is called
+on the master, the mirrored service is called on the remote instance. Any
+error is propagated back to the master. To distinguish proxy services from
+regular services, a service prefix must be provided.
+
+Example: If a proxy service is set up for `hdmi_cec.volume` with service
+prefix `remote_`, a new service called `hdmi_cec.remote_volume` will be
+registered on the master instance. When called, the actual call will be forwarded
+to `hdmi_cec.volume` on the remote instance. The YAML config would
+look like this:
+
+```yaml
+remote_homeassistant:
+  instances:
+  - host: 10.0.0.
+    service_prefix: remote_
+    services:
+      - hdmi_cec.volume
+```
+
+This can also be set up via Options for the integration under
+Configuration -> Integrations.
 
 ---
 
