@@ -50,7 +50,7 @@ class ConnectionStatusSensor(Entity):
             "port": self._entry.data[CONF_PORT],
             "secure": self._entry.data.get(CONF_SECURE, False),
             "verify_ssl": self._entry.data.get(CONF_VERIFY_SSL, False),
-            "entity_prefix": self._entry.data.get(CONF_ENTITY_PREFIX, ""),
+            "entity_prefix": self._entry.options.get(CONF_ENTITY_PREFIX, ""),
             "uuid": self.unique_id,
         }
 
