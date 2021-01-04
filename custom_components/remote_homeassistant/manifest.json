@@ -1,7 +1,8 @@
 {
   "domain": "remote_homeassistant",
   "name": "Remote Home-Assistant",
-  "documentation": "https://github.com/lukas-hetzenecker/home-assistant-remote",
+  "issue_tracker": "https://github.com/custom-components/remote_homeassistant/issues",
+  "documentation": "https://github.com/custom-components/remote_homeassistant",
   "dependencies": [],
   "config_flow": true,
   "codeowners": [
