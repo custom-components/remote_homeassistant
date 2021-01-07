@@ -6,10 +6,10 @@
   "dependencies": [],
   "config_flow": true,
   "codeowners": [
-    "@lukas-hetzenecker"
+    "@lukas-hetzenecker",
+    "@postlund"
   ],
   "requirements": [],
-  "homeassistant": "0.96.0",
   "zeroconf": [
     "_home-assistant._tcp.local."
   ]
