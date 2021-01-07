@@ -1,6 +1,5 @@
 {
   "config": {
-    "title": "Remote Home-Assistant",
     "flow_title": "Remote: {name}",
     "step": {
       "user": {
