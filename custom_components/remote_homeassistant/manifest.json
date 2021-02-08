@@ -12,5 +12,6 @@
   "requirements": [],
   "zeroconf": [
     "_home-assistant._tcp.local."
-  ]
+  ],
+  "version": "3.1"
 }
