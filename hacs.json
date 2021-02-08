@@ -1,6 +1,5 @@
 {
   "name": "Remote Home-Assistant",
   "render_readme": true,
-  "iot_class": "Local Polling",
-  "version": "3.1"
+  "iot_class": "Local Polling"
 }
