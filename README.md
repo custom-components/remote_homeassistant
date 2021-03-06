@@ -29,6 +29,8 @@ A possible use case for this is to be able to use different Z-Wave networks, on 
 
 ## Installation
 
+This component should be installed on the main instance of Home Assistant
+
 If you use HACS:
 
 1. Click install.
