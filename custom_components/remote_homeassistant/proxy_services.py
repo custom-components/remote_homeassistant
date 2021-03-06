@@ -23,11 +23,11 @@ class ProxyServices:
     @property
     def services(self):
         """Return list of service names."""
-        services = []
+        result = []
         for domain, services in self.remote_services.items():
             for service in services.keys():
-                services.append(f"{domain}.{service}")
-        return sorted(services)
+                result.append(f"{domain}.{service}")
+        return sorted(result)
 
     async def load(self):
         """Call to make initial registration of services."""
@@ -55,7 +55,7 @@ class ProxyServices:
             return
 
         description_cache = self.hass.data[SERVICE_DESCRIPTION_CACHE]
-        for service in self.entry.options[CONF_SERVICES]:
+        for service in self.entry.options.get(CONF_SERVICES, []):
             domain, service_name = service.split(".")
             service = service_prefix + service_name
 

@@ -188,9 +188,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self.filters = None
         self.events = None
         self.options = None
-        self.remote = self.hass.data[DOMAIN][self.config_entry.entry_id][
-            CONF_REMOTE_CONNECTION
-        ]
 
     async def async_step_init(self, user_input=None):
         """Manage basic options."""
@@ -200,6 +197,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         domains, _ = self._domains_and_entities()
         domains = set(domains + self.config_entry.options.get(CONF_LOAD_COMPONENTS, []))
+
+        remote = self.hass.data[DOMAIN][self.config_entry.entry_id][
+            CONF_REMOTE_CONNECTION
+        ]
 
         return self.async_show_form(
             step_id="init",
@@ -223,7 +224,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_SERVICES,
                         default=self._default(CONF_SERVICES),
-                    ): cv.multi_select(self.remote.proxy_services.services),
+                    ): cv.multi_select(remote.proxy_services.services),
                 }
             ),
         )
