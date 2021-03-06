@@ -13,5 +13,5 @@
   "zeroconf": [
     "_home-assistant._tcp.local."
   ],
-  "version": "3.2"
+  "version": "3.3"
 }
