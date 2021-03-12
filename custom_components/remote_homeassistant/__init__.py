@@ -252,10 +252,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         """Set up platforms and initiate connection."""
         for domain in entry.options.get(CONF_LOAD_COMPONENTS, []):
             hass.async_create_task(async_setup_component(hass, domain, {}))
-        for component in PLATFORMS:
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(entry, component)
-            )
+
+        await asyncio.gather(
+            *[
+                hass.config_entries.async_forward_entry_setup(entry, platform)
+                for platform in PLATFORMS
+            ]
+        )
         await remote.async_connect()
 
     hass.async_create_task(setup_components_and_platforms())
@@ -268,8 +271,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     unload_ok = all(
         await asyncio.gather(
             *[
-                hass.config_entries.async_forward_entry_unload(entry, component)
-                for component in PLATFORMS
+                hass.config_entries.async_forward_entry_unload(entry, platform)
+                for platform in PLATFORMS
             ]
         )
     )
