@@ -48,7 +48,7 @@ Otherwise:
 
 <img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/setup.png" height="400"/>
 
-2. Specify the connection details to the remove instance
+2. Specify the connection details to the remote instance
 
 <img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/device.png" height="400"/>
 
