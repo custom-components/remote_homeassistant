@@ -60,7 +60,7 @@ from .const import (
     CONF_SERVICES,
     DOMAIN,
 )
-from .rest_api import UnsupportedVersion, async_get_discovery_info
+from .rest_api import async_get_api_login
 from .proxy_services import ProxyServices
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,6 +72,7 @@ CONF_SECURE = "secure"
 CONF_SUBSCRIBE_EVENTS = "subscribe_events"
 CONF_ENTITY_PREFIX = "entity_prefix"
 CONF_FILTER = "filter"
+CONF_UUID = "uuid"
 
 STATE_INIT = "initializing"
 STATE_CONNECTING = "connecting"
@@ -182,7 +183,7 @@ def async_yaml_to_config_entry(instance_conf):
 async def _async_update_config_entry_if_from_yaml(hass, entries_by_id, conf):
     """Update a config entry with the latest yaml."""
     try:
-        info = await async_get_discovery_info(
+        info = await async_get_api_login(
             hass,
             conf[CONF_HOST],
             conf[CONF_PORT],
@@ -193,10 +194,28 @@ async def _async_update_config_entry_if_from_yaml(hass, entries_by_id, conf):
     except Exception:
         _LOGGER.exception(f"reload of {conf[CONF_HOST]} failed")
     else:
-        entry = entries_by_id.get(info["uuid"])
+        entry = entries_by_id.get(f"conf[CONF_HOST]:conf[CONF_PORT]")
         if entry:
             data, options = async_yaml_to_config_entry(conf)
             hass.config_entries.async_update_entry(entry, data=data, options=options)
+
+
+async def async_migrate_entry(hass, config_entry):
+    """Migrate old entry."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    # 1 -> 2: Remote UUID no longer accessible, so host/port is used instead
+    if config_entry.version == 1:
+        new_unique_id = f"{config_entry.data[CONF_HOST]}:{config_entry.data[CONF_PORT]}"
+        data = {CONF_UUID: config_entry.unique_id, **config_entry.data}
+        hass.config_entries.async_update_entry(
+            config_entry, unique_id=new_unique_id, data=data
+        )
+        config_entry.version = 2
+
+    _LOGGER.info("Migration to version %s successful", config_entry.version)
+
+    return True
 
 
 async def async_setup(hass: HomeAssistantType, config: ConfigType):
@@ -376,9 +395,9 @@ class RemoteConnection(object):
             await self.async_stop()
 
         async def _async_instance_get_info():
-            """Fetch discovery info from remote instance."""
+            """Try to log in to remote instance."""
             try:
-                return await async_get_discovery_info(
+                return await async_get_api_login(
                     self._hass,
                     self._entry.data[CONF_HOST],
                     self._entry.data[CONF_PORT],
@@ -388,25 +407,9 @@ class RemoteConnection(object):
                 )
             except OSError:
                 _LOGGER.exception("failed to connect")
-            except UnsupportedVersion:
-                _LOGGER.error("Unsupported version, at least 0.111 is required.")
             except Exception:
                 _LOGGER.exception("failed to fetch instance info")
             return None
-
-        @callback
-        def _async_instance_id_match(info):
-            """Verify if remote instance id matches the expected id."""
-            if not info:
-                return False
-            if info and info["uuid"] != self._entry.unique_id:
-                _LOGGER.error(
-                    "instance id not matching: %s != %s",
-                    info["uuid"],
-                    self._entry.unique_id,
-                )
-                return False
-            return True
 
         url = self._get_url()
 
@@ -415,12 +418,6 @@ class RemoteConnection(object):
 
         while True:
             info = await _async_instance_get_info()
-
-            # Verify we are talking to correct instance
-            if not _async_instance_id_match(info):
-                self.set_connection_state(STATE_RECONNECTING)
-                await asyncio.sleep(10)
-                continue
 
             try:
                 _LOGGER.info("Connecting to %s", url)
@@ -439,10 +436,7 @@ class RemoteConnection(object):
         device_registry.async_get_or_create(
             config_entry_id=self._entry.entry_id,
             identifiers={(DOMAIN, f"remote_{self._entry.unique_id}")},
-            name=info.get("location_name"),
             manufacturer="Home Assistant",
-            model=info.get("installation_type"),
-            sw_version=info.get("version"),
         )
 
         asyncio.ensure_future(self._recv())

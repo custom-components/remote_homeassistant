@@ -22,9 +22,7 @@ class ConnectionStatusSensor(Entity):
     @property
     def name(self):
         """Return name of sensor."""
-        host = self._entry.data[CONF_HOST]
-        port = self._entry.data[CONF_PORT]
-        return f"Remote connection to {host}:{port}"
+        return f"Remote connection to {self.unique_id}"
 
     @property
     def state(self):
@@ -34,7 +32,9 @@ class ConnectionStatusSensor(Entity):
     @property
     def unique_id(self):
         """Return unique device identifier."""
-        return self._entry.unique_id
+        host = self._entry.data[CONF_HOST]
+        port = self._entry.data[CONF_PORT]
+        return f"{host}:{port}"
 
     @property
     def should_poll(self):
@@ -50,7 +50,6 @@ class ConnectionStatusSensor(Entity):
             "secure": self._entry.data.get(CONF_SECURE, False),
             "verify_ssl": self._entry.data.get(CONF_VERIFY_SSL, False),
             "entity_prefix": self._entry.options.get(CONF_ENTITY_PREFIX, ""),
-            "uuid": self.unique_id,
         }
 
     async def async_added_to_hass(self):

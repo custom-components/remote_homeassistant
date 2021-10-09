@@ -22,12 +22,9 @@ class BadResponse(exceptions.HomeAssistantError):
     """Error to indicate a bad response was received."""
 
 
-class UnsupportedVersion(exceptions.HomeAssistantError):
-    """Error to indicate an unsupported version of Home Assistant."""
 
-
-async def async_get_discovery_info(hass, host, port, secure, access_token, verify_ssl):
-    """Get discovery information from server."""
+async def async_get_api_login(hass, host, port, secure, access_token, verify_ssl):
+    """Get to login to remote homeassistant API."""
     url = API_URL.format(
         proto="https" if secure else "http",
         host=host,
@@ -45,14 +42,7 @@ async def async_get_discovery_info(hass, host, port, secure, access_token, verif
             raise InvalidAuth()
         if resp.status != 200:
             raise ApiProblem()
-
-    # Fetch discovery info location for name and unique UUID
-    async with session.get(url + "discovery_info") as resp:
-        if resp.status != 200:
-            raise ApiProblem()
         json = await resp.json()
         if not isinstance(json, dict):
             raise BadResponse(f"Bad response data: {json}")
-        if "uuid" not in json:
-            raise UnsupportedVersion()
-        return json
+

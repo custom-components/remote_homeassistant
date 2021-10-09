@@ -25,8 +25,7 @@ from .rest_api import (
     ApiProblem,
     CannotConnect,
     InvalidAuth,
-    UnsupportedVersion,
-    async_get_discovery_info,
+    async_get_api_login,
 )
 from .const import (
     CONF_REMOTE_CONNECTION,
@@ -63,7 +62,7 @@ def _filter_str(index, filter):
 async def validate_input(hass: core.HomeAssistant, conf):
     """Validate the user input allows us to connect."""
     try:
-        info = await async_get_discovery_info(
+        info = await async_get_api_login(
             hass,
             conf[CONF_HOST],
             conf[CONF_PORT],
@@ -74,13 +73,13 @@ async def validate_input(hass: core.HomeAssistant, conf):
     except OSError:
         raise CannotConnect()
 
-    return {"title": info["location_name"], "uuid": info["uuid"]}
+    return {"title": "%s:%s" % (conf[CONF_HOST], conf[CONF_PORT])}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Remote Home-Assistant."""
 
-    VERSION = 1
+    VERSION = 2
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
     def __init__(self):
@@ -105,13 +104,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
-            except UnsupportedVersion:
-                errors["base"] = "unsupported_version"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                await self.async_set_unique_id(info["uuid"])
+                await self.async_set_unique_id(info["title"])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=info["title"], data=user_input)
 
@@ -140,13 +137,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(uuid)
         self._abort_if_unique_id_configured()
 
-        if await async_get(self.hass) == uuid:
-            return self.async_abort(reason="already_configured")
-
         url = properties.get("internal_url")
         if not url:
             url = properties.get("base_url")
         url = urlparse(url)
+
+        if await async_get(self.hass) == f"{url.hostname}:{url.port}":
+            return self.async_abort(reason="already_configured")
 
         self.prefill = {
             CONF_HOST: url.hostname,
@@ -173,7 +170,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # before setting up an entry
         conf[CONF_OPTIONS] = options
 
-        await self.async_set_unique_id(info["uuid"])
+        await self.async_set_unique_id(info["title"])
         self._abort_if_unique_id_configured(updates=conf)
 
         return self.async_create_entry(title=f"{info['title']} (YAML)", data=conf)
@@ -183,7 +180,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for the Home Assistant remote integration."""
 
     def __init__(self, config_entry):
-        """Initialize localtuya options flow."""
+        """Initialize remtoe_homeassistant options flow."""
         self.config_entry = config_entry
         self.filters = None
         self.events = None
