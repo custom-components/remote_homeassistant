@@ -1,7 +1,7 @@
 """Support for proxy services."""
 import asyncio
-import voluptuous as vol
 
+import voluptuous as vol
 from homeassistant.core import SERVICE_CALL_LIMIT
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.service import SERVICE_DESCRIPTION_CACHE

@@ -3,7 +3,7 @@
 from homeassistant import exceptions
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-API_URL = "{proto}://{host}:{port}/api/"
+API_URL = "{proto}://{host}:{port}/api/remote_homeassistant/discovery"
 
 
 class ApiProblem(exceptions.HomeAssistantError):
@@ -26,6 +26,10 @@ class UnsupportedVersion(exceptions.HomeAssistantError):
     """Error to indicate an unsupported version of Home Assistant."""
 
 
+class EndpointMissing(exceptions.HomeAssistantError):
+    """Error to indicate there is invalid auth."""
+
+
 async def async_get_discovery_info(hass, host, port, secure, access_token, verify_ssl):
     """Get discovery information from server."""
     url = API_URL.format(
@@ -39,15 +43,12 @@ async def async_get_discovery_info(hass, host, port, secure, access_token, verif
     }
     session = async_get_clientsession(hass, verify_ssl)
 
-    # Try to reach api endpoint solely for verifying auth
+    # Fetch discovery info location for name and unique UUID
     async with session.get(url, headers=headers) as resp:
+        if resp.status == 404:
+            raise EndpointMissing()
         if 400 <= resp.status < 500:
             raise InvalidAuth()
-        if resp.status != 200:
-            raise ApiProblem()
-
-    # Fetch discovery info location for name and unique UUID
-    async with session.get(url + "discovery_info") as resp:
         if resp.status != 200:
             raise ApiProblem()
         json = await resp.json()

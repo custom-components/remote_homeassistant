@@ -2,48 +2,25 @@
 import logging
 from urllib.parse import urlparse
 
-import voluptuous as vol
-
-from homeassistant import config_entries, core
-from homeassistant.helpers.instance_id import async_get
 import homeassistant.helpers.config_validation as cv
-from homeassistant.const import (
-    CONF_HOST,
-    CONF_PORT,
-    CONF_VERIFY_SSL,
-    CONF_ACCESS_TOKEN,
-    CONF_ENTITY_ID,
-    CONF_UNIT_OF_MEASUREMENT,
-    CONF_ABOVE,
-    CONF_BELOW,
-)
+import voluptuous as vol
+from homeassistant import config_entries, core
+from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
+                                 CONF_ENTITY_ID, CONF_HOST, CONF_PORT,
+                                 CONF_UNIT_OF_MEASUREMENT, CONF_VERIFY_SSL)
 from homeassistant.core import callback
+from homeassistant.helpers.instance_id import async_get
 from homeassistant.util import slugify
 
 from . import async_yaml_to_config_entry
-from .rest_api import (
-    ApiProblem,
-    CannotConnect,
-    InvalidAuth,
-    UnsupportedVersion,
-    async_get_discovery_info,
-)
-from .const import (
-    CONF_REMOTE_CONNECTION,
-    CONF_SECURE,
-    CONF_LOAD_COMPONENTS,
-    CONF_SERVICE_PREFIX,
-    CONF_SERVICES,
-    CONF_FILTER,
-    CONF_SUBSCRIBE_EVENTS,
-    CONF_ENTITY_PREFIX,
-    CONF_INCLUDE_DOMAINS,
-    CONF_INCLUDE_ENTITIES,
-    CONF_EXCLUDE_DOMAINS,
-    CONF_EXCLUDE_ENTITIES,
-    CONF_OPTIONS,
-    DOMAIN,
-)  # pylint:disable=unused-import
+from .const import (CONF_ENTITY_PREFIX,  # pylint:disable=unused-import
+                    CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES, CONF_FILTER,
+                    CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
+                    CONF_LOAD_COMPONENTS, CONF_OPTIONS, CONF_REMOTE_CONNECTION,
+                    CONF_SECURE, CONF_SERVICE_PREFIX, CONF_SERVICES,
+                    CONF_SUBSCRIBE_EVENTS, DOMAIN)
+from .rest_api import (ApiProblem, CannotConnect, EndpointMissing, InvalidAuth,
+                       UnsupportedVersion, async_get_discovery_info)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,6 +77,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 info = await validate_input(self.hass, user_input)
             except ApiProblem:
+                _LOGGER.exception("test")
                 errors["base"] = "api_problem"
             except CannotConnect:
                 errors["base"] = "cannot_connect"
@@ -107,6 +85,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_auth"
             except UnsupportedVersion:
                 errors["base"] = "unsupported_version"
+            except EndpointMissing:
+                errors["base"] = "missing_endpoint"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -135,6 +115,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_zeroconf(self, info):
         """Handle instance discovered via zeroconf."""
         properties = info["properties"]
+        port = info["port"]
         uuid = properties["uuid"]
 
         await self.async_set_unique_id(uuid)
@@ -150,7 +131,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self.prefill = {
             CONF_HOST: url.hostname,
-            CONF_PORT: url.port,
+            CONF_PORT: port,
             CONF_SECURE: url.scheme == "https",
         }
 
