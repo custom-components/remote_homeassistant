@@ -1,9 +1,9 @@
 """Sensor platform for connection status.."""
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL
-from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity import Entity
 
-from .const import CONF_SECURE, CONF_ENTITY_PREFIX
+from .const import CONF_ENTITY_PREFIX, CONF_SECURE
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):

@@ -15,12 +15,12 @@ Platform | Description
 -- | --
 `remote_homeassistant` | Link multiple Home-Assistant instances together .
 
-The master instance connects to the Websocket APIs of the secondary instances (already enabled out of box), the connection options are specified via the `host`, `port`, and `secure` configuration parameters. If the secondary instance requires an access token to connect (created on the Profile page), it can be set via the `access_token` parameter. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
+The main instance connects to the Websocket APIs of the remote instances (already enabled out of box), the connection options are specified via the `host`, `port`, and `secure` configuration parameters. If the remote instance requires an access token to connect (created on the Profile page), it can be set via the `access_token` parameter. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
 
 After the connection is completed, the remote states get populated into the master instance.
 The entity ids can optionally be prefixed via the `entity_prefix` parameter.
 
-The component keeps track which objects originate from which instance. Whenever a service is called on an object, the call gets forwarded to the particular secondary instance.
+The component keeps track which objects originate from which instance. Whenever a service is called on an object, the call gets forwarded to the particular remote instance.
 
 When the connection to the remote instance is lost, all previously published states are removed again from the local state registry.
 
@@ -29,7 +29,7 @@ A possible use case for this is to be able to use different Z-Wave networks, on 
 
 ## Installation
 
-This component should be installed on the main instance of Home Assistant
+This component *must* be installed on both the main and remote instance of Home Assistant
 
 If you use HACS:
 
@@ -38,7 +38,18 @@ If you use HACS:
 Otherwise:
 
 1. To use this plugin, copy the `remote_homeassistant` folder into your [custom_components folder](https://developers.home-assistant.io/docs/creating_integration_file_structure/#where-home-assistant-looks-for-integrations).
-2. Add `remote_homeassistant:` to your HA configuration.
+
+
+**Remote instance**
+
+On the remote instance you also need to add this to `configuration.yaml`:
+
+```yaml
+remote_homeassistant:
+  instances:
+```
+
+This is not needed on the main instance.
 
 ## Configuration 
 
@@ -229,7 +240,7 @@ services:
 
 ### Missing Components
 
-If you have remote domains (e.g. `switch`), that are not loaded on the master instance you need to list them under `load_components`, otherwise you'll get a `Call service failed` error.
+If you have remote domains (e.g. `switch`), that are not loaded on the main instance you need to list them under `load_components`, otherwise you'll get a `Call service failed` error.
 
 E.g. on the master:
 

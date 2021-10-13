@@ -4,64 +4,44 @@ Connect two Home Assistant instances via the Websocket API.
 For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/remote_homeassistant/
 """
-import fnmatch
-import logging
-import copy
 import asyncio
+import copy
+import fnmatch
 import inspect
+import logging
+import re
 from contextlib import suppress
 
 import aiohttp
-import re
-
-import voluptuous as vol
-
-from homeassistant.core import HomeAssistant, callback, Context
 import homeassistant.components.websocket_api.auth as api
-from homeassistant.core import EventOrigin, split_entity_id
-from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.helpers.typing import HomeAssistantType, ConfigType
-from homeassistant.const import (
-    CONF_HOST,
-    CONF_PORT,
-    EVENT_CALL_SERVICE,
-    EVENT_HOMEASSISTANT_STOP,
-    EVENT_STATE_CHANGED,
-    CONF_EXCLUDE,
-    CONF_ENTITIES,
-    CONF_ENTITY_ID,
-    CONF_DOMAINS,
-    CONF_INCLUDE,
-    CONF_UNIT_OF_MEASUREMENT,
-    CONF_ABOVE,
-    CONF_BELOW,
-    CONF_VERIFY_SSL,
-    CONF_ACCESS_TOKEN,
-    SERVICE_RELOAD,
-)
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.config import DATA_CUSTOMIZE
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
+                                 CONF_DOMAINS, CONF_ENTITIES, CONF_ENTITY_ID,
+                                 CONF_EXCLUDE, CONF_HOST, CONF_INCLUDE,
+                                 CONF_PORT, CONF_UNIT_OF_MEASUREMENT,
+                                 CONF_VERIFY_SSL, EVENT_CALL_SERVICE,
+                                 EVENT_HOMEASSISTANT_STOP, EVENT_STATE_CHANGED,
+                                 SERVICE_RELOAD)
+from homeassistant.core import (Context, EventOrigin, HomeAssistant, callback,
+                                split_entity_id)
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.reload import async_integration_yaml_config
-import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.reload import async_integration_yaml_config
+from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.setup import async_setup_component
 
-from .const import (
-    CONF_REMOTE_CONNECTION,
-    CONF_UNSUB_LISTENER,
-    CONF_INCLUDE_DOMAINS,
-    CONF_INCLUDE_ENTITIES,
-    CONF_EXCLUDE_DOMAINS,
-    CONF_EXCLUDE_ENTITIES,
-    CONF_OPTIONS,
-    CONF_LOAD_COMPONENTS,
-    CONF_SERVICE_PREFIX,
-    CONF_SERVICES,
-    DOMAIN,
-)
-from .rest_api import UnsupportedVersion, async_get_discovery_info
+from .const import (CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES,
+                    CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
+                    CONF_LOAD_COMPONENTS, CONF_OPTIONS, CONF_REMOTE_CONNECTION,
+                    CONF_SERVICE_PREFIX, CONF_SERVICES, CONF_UNSUB_LISTENER,
+                    DOMAIN)
 from .proxy_services import ProxyServices
+from .rest_api import UnsupportedVersion, async_get_discovery_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -221,6 +201,8 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType):
 
         await asyncio.gather(*update_tasks)
 
+    hass.http.register_view(DiscoveryInfoView())
+
     hass.helpers.service.async_register_admin_service(
         DOMAIN,
         SERVICE_RELOAD,
@@ -234,6 +216,7 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType):
                 DOMAIN, context={"source": SOURCE_IMPORT}, data=instance
             )
         )
+
     return True
 
 
@@ -746,3 +729,20 @@ class RemoteConnection(object):
         await self.call(got_states, "get_states")
 
         await self.proxy_services.load()
+
+
+class DiscoveryInfoView(HomeAssistantView):
+    """Get all logged errors and warnings."""
+
+    url = "/api/remote_homeassistant/discovery"
+    name = "api:remote_homeassistant:discovery"
+
+    async def get(self, request):
+        """Get discovery information."""
+        hass = request.app["hass"]
+        return self.json(
+            {
+                "uuid": await hass.helpers.instance_id.async_get(),
+                "location_name": hass.config.location_name,
+            }
+        )
