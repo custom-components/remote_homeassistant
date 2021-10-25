@@ -1,7 +1,7 @@
 """Sensor platform for connection status.."""
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import DeviceInfo, Entity
 
 from .const import CONF_ENTITY_PREFIX, CONF_SECURE
 
@@ -12,19 +12,23 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class ConnectionStatusSensor(Entity):
-    """Representation of a Tuya sensor."""
+    """Representation of a remote_homeassistant sensor."""
 
     def __init__(self, config_entry):
-        """Initialize the Tuya sensor."""
+        """Initialize the remote_homeassistant sensor."""
         self._state = None
         self._entry = config_entry
 
-    @property
-    def name(self):
-        """Return name of sensor."""
-        host = self._entry.data[CONF_HOST]
-        port = self._entry.data[CONF_PORT]
-        return f"Remote connection to {host}:{port}"
+        proto = 'http' if config_entry.data.get(CONF_SECURE) else 'https'
+        host = config_entry.data[CONF_HOST]
+        port = config_entry.data[CONF_PORT]
+        self._attr_name = f"Remote connection to {host}:{port}"
+        self._attr_unique_id = config_entry.unique_id
+        self._attr_should_poll = False
+        self._attr_device_info = DeviceInfo(
+            name="Home Assistant",
+            configuration_url=f"{proto}://{host}:{port}",
+        )
 
     @property
     def state(self):
@@ -32,17 +36,7 @@ class ConnectionStatusSensor(Entity):
         return self._state
 
     @property
-    def unique_id(self):
-        """Return unique device identifier."""
-        return self._entry.unique_id
-
-    @property
-    def should_poll(self):
-        """Return if entity should be polled."""
-        return False
-
-    @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return device state attributes."""
         return {
             "host": self._entry.data[CONF_HOST],
