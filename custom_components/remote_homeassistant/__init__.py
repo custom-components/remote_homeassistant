@@ -434,7 +434,7 @@ class RemoteConnection(object):
             name=info.get("location_name"),
             manufacturer="Home Assistant",
             model=info.get("installation_type"),
-            sw_version=info.get("version"),
+            sw_version=info.get("ha_version"),
         )
 
         asyncio.ensure_future(self._recv())
