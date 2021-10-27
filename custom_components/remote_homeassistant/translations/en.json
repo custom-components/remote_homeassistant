@@ -3,6 +3,11 @@
     "flow_title": "Remote: {name}",
     "step": {
       "user": {
+        "title": "Select installation type",
+        "description": "The remote node is the instance on which the states are gathered from"
+      },
+      "connection_details": {
+        "title": "Connection details",
         "data": {
           "host": "Host",
           "port": "Port",
