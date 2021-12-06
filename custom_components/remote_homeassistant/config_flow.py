@@ -148,8 +148,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_zeroconf(self, info):
         """Handle instance discovered via zeroconf."""
-        properties = info["properties"]
-        port = info["port"]
+        properties = info.properties
+        port = info.port
         uuid = properties["uuid"]
 
         await self.async_set_unique_id(uuid)
