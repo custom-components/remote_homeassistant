@@ -51,7 +51,7 @@ remote_homeassistant:
 
 This is not needed on the main instance.
 
-## Configuration 
+## Configuration (main instance)
 
 ### Web (Config flow)
 
