@@ -1,6 +1,6 @@
 [![License][license-shield]](LICENSE.md)
 
-[![hacs][hacsbadge]](hacs)
+[![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
 
 <img align="left" width="80" height="80" src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/icons/icon.png" alt="App icon">
