@@ -1,6 +1,6 @@
 [![License][license-shield]](LICENSE.md)
 
-[![hacs][hacsbadge]](hacs)
+[![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
 
 <img align="left" width="80" height="80" src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/icons/icon.png" alt="App icon">
@@ -289,7 +289,7 @@ Configuration -> Integrations.
 
 See also the discussion on https://github.com/home-assistant/home-assistant/pull/13876 and https://github.com/home-assistant/architecture/issues/246 for this component
 
-[hacs]: https://github.com/custom-components/hacs
+[hacs]: https://github.com/hacs/integration
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
 [license-shield]: https://img.shields.io/github/license/lukas-hetzenecker/home-assistant-remote.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-lukas--hetzenecker-blue.svg?style=for-the-badge
