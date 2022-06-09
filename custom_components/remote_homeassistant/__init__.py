@@ -427,7 +427,7 @@ class RemoteConnection(object):
 
         self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_stop_handler)
 
-        device_registry = await dr.async_get_registry(self._hass)
+        device_registry = dr.async_get(self._hass)
         device_registry.async_get_or_create(
             config_entry_id=self._entry.entry_id,
             identifiers={(DOMAIN, f"remote_{self._entry.unique_id}")},
