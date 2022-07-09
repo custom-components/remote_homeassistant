@@ -129,18 +129,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=info["title"], data=user_input)
 
-        host = self.prefill.get(CONF_HOST) or vol.UNDEFINED
-        port = self.prefill.get(CONF_PORT) or vol.UNDEFINED
-        secure = self.prefill.get(CONF_SECURE) or vol.UNDEFINED
+        user_input = user_input or dict()
+        host = user_input.get(CONF_HOST, self.prefill.get(CONF_HOST) or vol.UNDEFINED)
+        port = user_input.get(CONF_PORT, self.prefill.get(CONF_PORT) or vol.UNDEFINED)
+        secure = user_input.get(CONF_SECURE, self.prefill.get(CONF_SECURE) or vol.UNDEFINED)
         return self.async_show_form(
             step_id="connection_details",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_HOST, default=host): str,
                     vol.Required(CONF_PORT, default=port): int,
-                    vol.Required(CONF_ACCESS_TOKEN): str,
+                    vol.Required(CONF_ACCESS_TOKEN, default=user_input.get(CONF_ACCESS_TOKEN, vol.UNDEFINED)): str,
                     vol.Optional(CONF_SECURE, default=secure): bool,
-                    vol.Optional(CONF_VERIFY_SSL, default=True): bool,
+                    vol.Optional(CONF_VERIFY_SSL, default=user_input.get(CONF_VERIFY_SSL, True)): bool,
                 }
             ),
             errors=errors,
