@@ -18,7 +18,7 @@
       }
     },
     "error": {
-      "api_problem": "Bad response from server",
+      "api_problem": "Unbekannte Antwort vom Server",
       "cannot_connect": "Verbindung zum Server fehlgeschlagen",
       "invalid_auth": "Ungültige Anmeldeinformationen",
       "unsupported_version": "Version nicht unterstützt. Mindestens Version 0.111 benötigt.",
