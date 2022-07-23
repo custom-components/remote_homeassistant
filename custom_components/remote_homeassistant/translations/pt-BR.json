@@ -1,0 +1,83 @@
+{
+  "config": {
+    "flow_title": "Remote: {name}",
+    "step": {
+      "user": {
+        "title": "Selecione o tipo de instalação",
+        "description": "O nó remoto é a instância na qual os estados são coletados de"
+      },
+      "connection_details": {
+        "title": "Detalhes da conexão",
+        "data": {
+          "host": "Host",
+          "port": "Porta",
+          "secure": "Protegido",
+          "verify_ssl": "Verificar SSL",
+          "access_token": "Token de acesso"
+        }
+      }
+    },
+    "error": {
+      "api_problem": "Resposta ruim do servidor",
+      "cannot_connect": "Falha ao conectar ao servidor",
+      "invalid_auth": "Credenciais inválidas",
+      "unsupported_version": "Versão não suportada. Pelo menos a versão 0.111 é necessária.",
+      "unknown": "Ocorreu um erro desconhecido",
+      "missing_endpoint": "Você precisa instalar o Remote Home Assistant neste host e adicionar remote_homeassistant: à sua configuração."
+    },
+    "abort": {
+      "already_configured": "Já configurado"
+    }
+  },
+  "state": {
+    "_": {
+      "disconnected": "Desconectado",
+      "connecting": "Conectando",
+      "connected": "Conectado",
+      "reconnecting": "Reconectando",
+      "auth_invalid": "Token de acesso inválido",
+      "auth_required": "Autentificação requerida"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções básicas (passo 1/4)",
+        "data": {
+            "entity_prefix": "Prefixo da entidade (opcional)",
+            "load_components": "Carregar componente (se não estiver carregado)",
+            "service_prefix": "Prefixo do serviço",
+            "services": "Serviços remotos"
+        }
+      },
+      "domain_entity_filters": {
+        "title": "Filtros de domínio e entidade (etapa 2/4)",
+        "data": {
+          "include_domains": "Incluir domínios",
+          "include_entities": "Incluir entidades",
+          "exclude_domains": "Excluir domínios",
+          "exclude_entities": "Excluir entidades"
+        }
+      },
+      "general_filters": {
+        "title": "Filtros (etapa 3/4)",
+        "description": "Adicione um novo filtro especificando `ID da entidade`, um ou mais atributos de filtro e pressione `Enviar`. Remova os filtros existentes desmarcando-os em `Filtros`.\n\nDeixe `ID da entidade` vazio e pressione `Enviar` para não fazer mais alterações.",
+        "data": {
+          "filter": "Filtros",
+          "entity_id": "ID da entidade",
+          "unit_of_measurement": "Unidade de medida",
+          "above": "Acima de",
+          "below": "Abaixo de"
+        }
+      },
+      "events": {
+        "title": "Eventos inscritos (passo 4/4)",
+        "description": "Adicione um novo evento inscrito digitando seu nome em `Adicionar novo evento` e pressione `Enviar`. Remova os eventos existentes desmarcando-os em `Eventos`.\n\nDeixe `Adicionar novo evento` e pressione `Enviar` para não fazer mais alterações.",
+        "data": {
+            "subscribe_events": "Eventos",
+            "add_new_event": "Adicionar novo evento"
+        }
+      }
+    }
+  }
+}
