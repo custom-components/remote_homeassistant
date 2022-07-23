@@ -1,0 +1,83 @@
+{
+  "config": {
+    "flow_title": "Remote: {name}",
+    "step": {
+      "user": {
+        "title": "Installationstyp wählen",
+        "description": "Der Remote Node ist die Instanz, von der die Daten gesammelt werden"
+      },
+      "connection_details": {
+        "title": "Verbindungsdetails",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "secure": "Sicher",
+          "verify_ssl": "SSL verifizieren",
+          "access_token": "Verbindungstoken"
+        }
+      }
+    },
+    "error": {
+      "api_problem": "Unbekannte Antwort vom Server",
+      "cannot_connect": "Verbindung zum Server fehlgeschlagen",
+      "invalid_auth": "Ungültige Anmeldeinformationen",
+      "unsupported_version": "Version nicht unterstützt. Mindestens Version 0.111 benötigt.",
+      "unknown": "Ein unbekannter Fehler trat auf",
+      "missing_endpoint": "Sie müssen Remote Home Assistant auf diesem Host installieren und remote_homeassistant: zu seiner Konfiguration hinzufügen."
+    },
+    "abort": {
+      "already_configured": "Bereits konfiguriert"
+    }
+  },
+  "state": {
+    "_": {
+      "disconnected": "Getrennt",
+      "connecting": "Verbindet",
+      "connected": "Verbunden",
+      "reconnecting": "Wiederverbinden",
+      "auth_invalid": "Ungültiger Zugangstoken",
+      "auth_required": "Authentifizierung erforderlich"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Basis-Einstellungen (Schritt 1/4)",
+        "data": {
+            "entity_prefix": "Entitätspräfix (optional)",
+            "load_components": "Komponente laden (wenn nicht geladen)",
+            "service_prefix": "Servicepräfix",
+            "services": "Remote Services"
+        }
+      },
+      "domain_entity_filters": {
+        "title": "Domain- und Entitätsfilter (Schritt 2/4)",
+        "data": {
+          "include_domains": "Domains einbeziehen",
+          "include_entities": "Entitäten einbeziehen",
+          "exclude_domains": "Domains ausschließen",
+          "exclude_entities": "Entitäten ausschließen"
+        }
+      },
+      "general_filters": {
+        "title": "Filter (Schritt 3/4)",
+        "description": "Fügen Sie einen neuen Filter hinzu, indem Sie die „Entitäts-ID“, ein oder mehrere Filterattribute angeben und auf „Absenden“ klicken. Entfernen Sie vorhandene Filter, indem Sie sie unter „Filter“ deaktivieren.\n\nLassen Sie „Entitäts-ID“ leer und klicken Sie auf „Absenden“, um keine weiteren Änderungen vorzunehmen.",
+        "data": {
+          "filter": "Filter",
+          "entity_id": "Entitäts-ID",
+          "unit_of_measurement": "Maßeinheit",
+          "above": "Über",
+          "below": "Unter"
+        }
+      },
+      "events": {
+        "title": "Abonnierte Events (Schritt 4/4)",
+        "description": "Fügen Sie neue abonnierte Events hinzu, indem Sie ihren Namen in „Neue Events hinzufügen“ eingeben und auf „Absenden“ klicken. Deaktivieren Sie vorhandene Events, indem Sie sie unter „Events“ entfernen.\n\nLassen Sie „Neue Events hinzufügen“ leer und klicken Sie auf „Absenden“, um keine weiteren Änderungen vorzunehmen.",
+        "data": {
+            "subscribe_events": "Events",
+            "add_new_event": "Neue Events hinzufügen"
+        }
+      }
+    }
+  }
+}
