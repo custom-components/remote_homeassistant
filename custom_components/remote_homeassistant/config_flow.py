@@ -238,7 +238,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         default=self._default(CONF_LOAD_COMPONENTS),
                     ): cv.multi_select(sorted(domains)),
                     vol.Required(
-                        CONF_SERVICE_PREFIX, default=slugify(self.config_entry.title)
+                        CONF_SERVICE_PREFIX, default=self.config_entry.options.get(CONF_SERVICE_PREFIX) or slugify(self.config_entry.title)
                     ): str,
                     vol.Optional(
                         CONF_SERVICES,
