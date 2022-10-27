@@ -3,7 +3,7 @@
 from homeassistant import exceptions
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-API_URL = "{proto}://{host}:{port}/api/remote_homeassistant/discovery"
+API_URL = "{proto}://{host}:{port}/api/msentry_gateway/discovery"
 
 
 class ApiProblem(exceptions.HomeAssistantError):

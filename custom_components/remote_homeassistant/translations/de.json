@@ -23,7 +23,7 @@
       "invalid_auth": "Ungültige Anmeldeinformationen",
       "unsupported_version": "Version nicht unterstützt. Mindestens Version 0.111 benötigt.",
       "unknown": "Ein unbekannter Fehler trat auf",
-      "missing_endpoint": "Sie müssen Remote Home Assistant auf diesem Host installieren und remote_homeassistant: zu seiner Konfiguration hinzufügen."
+      "missing_endpoint": "Sie müssen Remote Home Assistant auf diesem Host installieren und msentry_gateway: zu seiner Konfiguration hinzufügen."
     },
     "abort": {
       "already_configured": "Bereits konfiguriert"

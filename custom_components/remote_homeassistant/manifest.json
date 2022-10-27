@@ -1,8 +1,8 @@
 {
-  "domain": "remote_homeassistant",
+  "domain": "msentry_gateway",
   "name": "Remote Home-Assistant",
-  "issue_tracker": "https://github.com/custom-components/remote_homeassistant/issues",
-  "documentation": "https://github.com/custom-components/remote_homeassistant",
+  "issue_tracker": "https://github.com/custom-components/msentry_gateway/issues",
+  "documentation": "https://github.com/custom-components/msentry_gateway",
   "dependencies": ["http"],
   "config_flow": true,
   "codeowners": [

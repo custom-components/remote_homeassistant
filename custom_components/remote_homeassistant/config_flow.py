@@ -199,7 +199,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for the Home Assistant remote integration."""
 
     def __init__(self, config_entry):
-        """Initialize remote_homeassistant options flow."""
+        """Initialize msentry_gateway options flow."""
         self.config_entry = config_entry
         self.filters = None
         self.events = None

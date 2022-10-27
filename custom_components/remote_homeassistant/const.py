@@ -23,6 +23,6 @@ CONF_EXCLUDE_ENTITIES = "exclude_entities"
 CONF_MAIN = "Add a remote node"
 CONF_REMOTE = "Setup as remote node"
 
-DOMAIN = "remote_homeassistant"
+DOMAIN = "msentry_gateway"
 
 REMOTE_ID = "remote"

@@ -8,8 +8,8 @@ ATTR_INSTALLATION_TYPE = "installation_type"
 class DiscoveryInfoView(HomeAssistantView):
     """Get all logged errors and warnings."""
 
-    url = "/api/remote_homeassistant/discovery"
-    name = "api:remote_homeassistant:discovery"
+    url = "/api/msentry_gateway/discovery"
+    name = "api:msentry_gateway:discovery"
 
     async def get(self, request):
         """Get discovery information."""

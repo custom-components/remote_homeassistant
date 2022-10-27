@@ -23,7 +23,7 @@
       "invalid_auth": "Invalid credentials",
       "unsupported_version": "Unsupported version. At least version 0.111 is required.",
       "unknown": "An unknown error occurred",
-      "missing_endpoint": "You need to install Remote Home Assistant on this host and add remote_homeassistant: to its configuration."
+      "missing_endpoint": "You need to install MSentry Gateway on this host and add msentry_gateway: to its configuration."
     },
     "abort": {
       "already_configured": "Already configured"

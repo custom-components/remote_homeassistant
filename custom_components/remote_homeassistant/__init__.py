@@ -2,7 +2,7 @@
 Connect two Home Assistant instances via the Websocket API.
 
 For more details about this component, please refer to the documentation at
-https://home-assistant.io/components/remote_homeassistant/
+https://home-assistant.io/components/msentry_gateway/
 """
 import asyncio
 import copy
@@ -34,7 +34,7 @@ from homeassistant.helpers.reload import async_integration_yaml_config
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.setup import async_setup_component
 
-from custom_components.remote_homeassistant.views import DiscoveryInfoView
+from custom_components.msentry_gateway.views import DiscoveryInfoView
 
 from .const import (CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES,
                     CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
@@ -185,7 +185,7 @@ async def setup_remote_instance(hass: HomeAssistantType):
 
 
 async def async_setup(hass: HomeAssistantType, config: ConfigType):
-    """Set up the remote_homeassistant component."""
+    """Set up the msentry_gateway component."""
     hass.data.setdefault(DOMAIN, {})
 
     async def _handle_reload(service):
@@ -348,7 +348,7 @@ class RemoteConnection(object):
 
     def set_connection_state(self, state):
         """Change current connection state."""
-        signal = f"remote_homeassistant_{self._entry.unique_id}"
+        signal = f"msentry_gateway_{self._entry.unique_id}"
         async_dispatcher_send(self._hass, signal, state)
 
     @callback
