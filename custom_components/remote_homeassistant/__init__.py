@@ -4,7 +4,10 @@ Connect two Home Assistant instances via the Websocket API.
 For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/remote_homeassistant/
 """
+from __future__ import annotations
 import asyncio
+import typing
+from typing import Optional
 import copy
 import fnmatch
 import inspect
@@ -13,6 +16,7 @@ import re
 from contextlib import suppress
 
 import aiohttp
+from aiohttp import ClientWebSocketResponse
 import homeassistant.components.websocket_api.auth as api
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -292,7 +296,7 @@ async def _update_listener(hass, config_entry):
     await hass.config_entries.async_reload(config_entry.entry_id)
 
 
-class RemoteConnection(object):
+class RemoteConnection:
     """A Websocket connection to a remote home-assistant instance."""
 
     def __init__(self, hass, config_entry):
@@ -328,7 +332,7 @@ class RemoteConnection(object):
         )
         self._entity_prefix = config_entry.options.get(CONF_ENTITY_PREFIX, "")
 
-        self._connection = None
+        self._connection : Optional[ClientWebSocketResponse] = None
         self._heartbeat_task = None
         self._is_stopping = False
         self._entities = set()
@@ -445,7 +449,7 @@ class RemoteConnection(object):
 
     async def _heartbeat_loop(self):
         """Send periodic heartbeats to remote instance."""
-        while not self._connection.closed:
+        while self._connection is not None and not self._connection.closed:
             await asyncio.sleep(HEARTBEAT_INTERVAL)
 
             _LOGGER.debug("Sending ping")
@@ -478,9 +482,13 @@ class RemoteConnection(object):
         self.__id += 1
         return _id
 
-    async def call(self, callback, message_type, **extra_args):
+    async def call(self, handler, message_type, **extra_args) -> None:
+        if self._connection is None:
+            _LOGGER.error("No remote websocket connection")
+            return
+
         _id = self._next_id()
-        self._handlers[_id] = callback
+        self._handlers[_id] = handler
         try:
             await self._connection.send_json(
                 {"id": _id, "type": message_type, **extra_args}
@@ -511,7 +519,7 @@ class RemoteConnection(object):
             asyncio.ensure_future(self.async_connect())
 
     async def _recv(self):
-        while not self._connection.closed:
+        while self._connection is not None and not self._connection.closed:
             try:
                 data = await self._connection.receive()
             except aiohttp.client_exceptions.ClientError as err:
@@ -552,13 +560,13 @@ class RemoteConnection(object):
 
             elif message["type"] == api.TYPE_AUTH_REQUIRED:
                 if self._access_token:
-                    data = {"type": api.TYPE_AUTH, "access_token": self._access_token}
+                    json_data = {"type": api.TYPE_AUTH, "access_token": self._access_token}
                 else:
                     _LOGGER.error("Access token required, but not provided")
                     self.set_connection_state(STATE_AUTH_REQUIRED)
                     return
                 try:
-                    await self._connection.send_json(data)
+                    await self._connection.send_json(json_data)
                 except Exception as err:
                     _LOGGER.error("could not send data to remote connection: %s", err)
                     break
@@ -570,12 +578,12 @@ class RemoteConnection(object):
                 return
 
             else:
-                callback = self._handlers.get(message["id"])
-                if callback is not None:
-                    if inspect.iscoroutinefunction(callback):
-                        await callback(message)
+                handler = self._handlers.get(message["id"])
+                if handler is not None:
+                    if inspect.iscoroutinefunction(handler):
+                        await handler(message)
                     else:
-                        callback(message)
+                        handler(message)
 
         await self._disconnected()
 
@@ -584,7 +592,7 @@ class RemoteConnection(object):
             """Send local event to remote instance.
 
             The affected entity_id has to origin from that remote instance,
-            otherwise the event is dicarded.
+            otherwise the event is discarded.
             """
             event_data = event.data
             service_data = event_data["service_data"]
@@ -628,6 +636,9 @@ class RemoteConnection(object):
 
             _LOGGER.debug("forward event: %s", data)
 
+            if self._connection is None:
+                _LOGGER.error("There is no remote connecion to send send data to")
+                return
             try:
                 await self._connection.send_json(data)
             except Exception as err:
@@ -636,7 +647,7 @@ class RemoteConnection(object):
 
         def state_changed(entity_id, state, attr):
             """Publish remote state change on local instance."""
-            domain, object_id = split_entity_id(entity_id)
+            domain, _object_id = split_entity_id(entity_id)
 
             self._all_entity_names.add(entity_id)
 
@@ -661,7 +672,7 @@ class RemoteConnection(object):
                 try:
                     if f[CONF_BELOW] and float(state) < f[CONF_BELOW]:
                         _LOGGER.info(
-                            "%s: ignoring state '%s', because " "below '%s'",
+                            "%s: ignoring state '%s', because below '%s'",
                             entity_id,
                             state,
                             f[CONF_BELOW],
@@ -669,7 +680,7 @@ class RemoteConnection(object):
                         return
                     if f[CONF_ABOVE] and float(state) > f[CONF_ABOVE]:
                         _LOGGER.info(
-                            "%s: ignoring state '%s', because " "above '%s'",
+                            "%s: ignoring state '%s', because above '%s'",
                             entity_id,
                             state,
                             f[CONF_ABOVE],
