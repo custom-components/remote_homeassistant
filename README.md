@@ -3,7 +3,7 @@
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
 
-<img align="left" width="80" height="80" src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/icons/icon.png" alt="App icon">
+<img align="left" width="80" height="80" src="icons/icon.png" alt="App icon">
 
 # Remote Home-Assistant
 
@@ -57,11 +57,11 @@ This is not needed on the main instance.
 
 1. Add a new Remote Home-Assistant integration
 
-<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/setup.png" height="400"/>
+<img src="img/setup.png" height="400"/>
 
 2. Specify the connection details to the remote instance
 
-<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/device.png" height="400"/>
+<img src="img/device.png" height="400"/>
 
 You can generate an access token in the by logging into your remote instance, clicking on your user profile icon, and then selecting "Create Token" under "Long-Lived Access Tokens".
 
@@ -69,17 +69,17 @@ Check "Secure" if you want to connect via a secure (https/wss) connection
 
 3. After the instance is added, you can configure additional Options by clicking the "Options" button.
 
-<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/options.png" height="200"/>
+<img src="img/options.png" height="200"/>
 
 4. You can configure an optional prefix that gets prepended to all remote entities (if unsure, leave this blank).
 
-<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/step1.png" height="200"/>
+<img src="img/step1.png" height="200"/>
 
 Click "Submit" to proceed to the next step.
 
 5. You can also define filters, that include/exclude specified entities or domains from the remote instance.
 
-<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/step2.png" height="200"/>
+<img src="img/step2.png" height="200"/>
 
 
 
