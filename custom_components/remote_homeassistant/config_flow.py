@@ -208,7 +208,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Manage basic options."""
         if self.config_entry.unique_id == REMOTE_ID:
-            return
+            return self.async_abort(reason="not_supported")
         
         if user_input is not None:
             self.options = user_input.copy()
