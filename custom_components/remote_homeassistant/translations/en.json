@@ -78,6 +78,9 @@
             "add_new_event": "Add new event"
         }
       }
+    },
+    "abort": {
+      "not_supported": "No configuration options supported for a remote node"
     }
   }
 }
