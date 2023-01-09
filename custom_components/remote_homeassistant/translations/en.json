@@ -80,7 +80,7 @@
       }
     },
     "abort": {
-      "not_supported": "No configuration options supported"
+      "not_supported": "No configuration options supported for a remote node"
     }
   }
 }
