@@ -13,7 +13,8 @@
           "port": "Port",
           "secure": "Secure",
           "verify_ssl": "Verify SSL",
-          "access_token": "Access token"
+          "access_token": "Access token",
+          "max_message_size": "Maximum Message Size"
         }
       }
     },
@@ -44,10 +45,10 @@
       "init": {
         "title": "Basic Options (step 1/4)",
         "data": {
-            "entity_prefix": "Entity prefix (optional)",
-            "load_components": "Load component (if not loaded)",
-            "service_prefix": "Service prefix",
-            "services": "Remote Services"
+          "entity_prefix": "Entity prefix (optional)",
+          "load_components": "Load component (if not loaded)",
+          "service_prefix": "Service prefix",
+          "services": "Remote Services"
         }
       },
       "domain_entity_filters": {
@@ -74,8 +75,8 @@
         "title": "Subscribed events (step 4/4)",
         "description": "Add a new subscribed event by entering its name in `Add new event` and press `Submit`. Remove existing events by unticking them in `Events`.\n\nLeave `Add new event` and press `Submit` to make no further changes.",
         "data": {
-            "subscribe_events": "Events",
-            "add_new_event": "Add new event"
+          "subscribe_events": "Events",
+          "add_new_event": "Add new event"
         }
       }
     },

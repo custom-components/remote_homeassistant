@@ -13,7 +13,8 @@
           "port": "Porta",
           "secure": "Protegido",
           "verify_ssl": "Verificar SSL",
-          "access_token": "Token de acesso"
+          "access_token": "Token de acesso",
+          "max_message_size": "Tamanho máximo da mensagem"
         }
       }
     },
@@ -44,10 +45,10 @@
       "init": {
         "title": "Opções básicas (passo 1/4)",
         "data": {
-            "entity_prefix": "Prefixo da entidade (opcional)",
-            "load_components": "Carregar componente (se não estiver carregado)",
-            "service_prefix": "Prefixo do serviço",
-            "services": "Serviços remotos"
+          "entity_prefix": "Prefixo da entidade (opcional)",
+          "load_components": "Carregar componente (se não estiver carregado)",
+          "service_prefix": "Prefixo do serviço",
+          "services": "Serviços remotos"
         }
       },
       "domain_entity_filters": {
@@ -74,8 +75,8 @@
         "title": "Eventos inscritos (passo 4/4)",
         "description": "Adicione um novo evento inscrito digitando seu nome em `Adicionar novo evento` e pressione `Enviar`. Remova os eventos existentes desmarcando-os em `Eventos`.\n\nDeixe `Adicionar novo evento` e pressione `Enviar` para não fazer mais alterações.",
         "data": {
-            "subscribe_events": "Eventos",
-            "add_new_event": "Adicionar novo evento"
+          "subscribe_events": "Eventos",
+          "add_new_event": "Adicionar novo evento"
         }
       }
     }

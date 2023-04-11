@@ -168,6 +168,10 @@ access_token:
   description: Access token of the remote instance, if set.
   required: false
   type: string
+max_message_size:
+  description: Maximum message size, you can expand size limit in case of an error.
+  required: false
+  type: int
 entity_prefix:
   description: Prefix for all entities of the remote instance.
   required: false
