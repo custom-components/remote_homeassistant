@@ -2,11 +2,10 @@
 import asyncio
 
 import voluptuous as vol
-from homeassistant.core import SERVICE_CALL_LIMIT
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.service import SERVICE_DESCRIPTION_CACHE
 
-from .const import CONF_SERVICE_PREFIX, CONF_SERVICES
+from .const import CONF_SERVICE_PREFIX, CONF_SERVICES, SERVICE_CALL_LIMIT
 
 
 class ProxyServices:
