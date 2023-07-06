@@ -26,3 +26,6 @@ CONF_REMOTE = "Setup as remote node"
 DOMAIN = "remote_homeassistant"
 
 REMOTE_ID = "remote"
+
+# replaces 'from homeassistant.core import SERVICE_CALL_LIMIT'
+SERVICE_CALL_LIMIT = 10
