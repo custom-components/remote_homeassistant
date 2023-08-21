@@ -72,7 +72,7 @@ INSTANCES_SCHEMA = vol.Schema(
         vol.Optional(CONF_SECURE, default=False): cv.boolean,
         vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
         vol.Required(CONF_ACCESS_TOKEN): cv.string,
-        vol.Optional(CONF_MAX_MSG_SIZE, default=4*1024*1024): vol.Coerce(int),
+        vol.Optional(CONF_MAX_MSG_SIZE, default=16*1024*1024): vol.Coerce(int),
         vol.Optional(CONF_EXCLUDE, default={}): vol.Schema(
             {
                 vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
