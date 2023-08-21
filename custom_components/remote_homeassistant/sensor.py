@@ -3,7 +3,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
-from .const import CONF_ENTITY_PREFIX, CONF_SECURE, CONF_MAX_MSG_SIZE
+from .const import DOMAIN, CONF_ENTITY_PREFIX, CONF_SECURE, CONF_MAX_MSG_SIZE
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -28,6 +28,7 @@ class ConnectionStatusSensor(Entity):
         self._attr_device_info = DeviceInfo(
             name="Home Assistant",
             configuration_url=f"{proto}://{host}:{port}",
+            identifiers={(DOMAIN, f"remote_{self._attr_unique_id}")},
         )
 
     @property
