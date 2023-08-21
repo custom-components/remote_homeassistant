@@ -19,7 +19,7 @@ from .const import (CONF_ENTITY_PREFIX,  # pylint:disable=unused-import
                     CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES, CONF_FILTER,
                     CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
                     CONF_LOAD_COMPONENTS, CONF_MAIN, CONF_OPTIONS, CONF_REMOTE, CONF_REMOTE_CONNECTION,
-                    CONF_SECURE, CONF_SERVICE_PREFIX, CONF_SERVICES,
+                    CONF_SECURE, CONF_SERVICE_PREFIX, CONF_SERVICES, CONF_MAX_MSG_SIZE,
                     CONF_SUBSCRIBE_EVENTS, DOMAIN, REMOTE_ID)
 from .rest_api import (ApiProblem, CannotConnect, EndpointMissing, InvalidAuth,
                        UnsupportedVersion, async_get_discovery_info)
@@ -71,7 +71,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self):
         """Initialize a new ConfigFlow."""
-        self.prefill = {CONF_PORT: 8123, CONF_SECURE: True}
+        self.prefill = {CONF_PORT: 8123, CONF_SECURE: True, CONF_MAX_MSG_SIZE: 16*1024*1024}
 
     @staticmethod
     @callback
@@ -133,6 +133,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         host = user_input.get(CONF_HOST, self.prefill.get(CONF_HOST) or vol.UNDEFINED)
         port = user_input.get(CONF_PORT, self.prefill.get(CONF_PORT) or vol.UNDEFINED)
         secure = user_input.get(CONF_SECURE, self.prefill.get(CONF_SECURE) or vol.UNDEFINED)
+        max_msg_size = user_input.get(CONF_MAX_MSG_SIZE, self.prefill.get(CONF_MAX_MSG_SIZE) or vol.UNDEFINED)
         return self.async_show_form(
             step_id="connection_details",
             data_schema=vol.Schema(
@@ -140,6 +141,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_HOST, default=host): str,
                     vol.Required(CONF_PORT, default=port): int,
                     vol.Required(CONF_ACCESS_TOKEN, default=user_input.get(CONF_ACCESS_TOKEN, vol.UNDEFINED)): str,
+                    vol.Required(CONF_MAX_MSG_SIZE, default=max_msg_size): int,
                     vol.Optional(CONF_SECURE, default=secure): bool,
                     vol.Optional(CONF_VERIFY_SSL, default=user_input.get(CONF_VERIFY_SSL, True)): bool,
                 }

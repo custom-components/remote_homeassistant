@@ -13,7 +13,8 @@
           "port": "Port",
           "secure": "Sicher",
           "verify_ssl": "SSL verifizieren",
-          "access_token": "Verbindungstoken"
+          "access_token": "Verbindungstoken",
+          "max_message_size": "Maximale Nachrichtengröße"
         }
       }
     },
@@ -44,10 +45,10 @@
       "init": {
         "title": "Basis-Einstellungen (Schritt 1/4)",
         "data": {
-            "entity_prefix": "Entitätspräfix (optional)",
-            "load_components": "Komponente laden (wenn nicht geladen)",
-            "service_prefix": "Servicepräfix",
-            "services": "Remote Services"
+          "entity_prefix": "Entitätspräfix (optional)",
+          "load_components": "Komponente laden (wenn nicht geladen)",
+          "service_prefix": "Servicepräfix",
+          "services": "Remote Services"
         }
       },
       "domain_entity_filters": {
@@ -74,8 +75,8 @@
         "title": "Abonnierte Events (Schritt 4/4)",
         "description": "Fügen Sie neue abonnierte Events hinzu, indem Sie ihren Namen in „Neue Events hinzufügen“ eingeben und auf „Absenden“ klicken. Deaktivieren Sie vorhandene Events, indem Sie sie unter „Events“ entfernen.\n\nLassen Sie „Neue Events hinzufügen“ leer und klicken Sie auf „Absenden“, um keine weiteren Änderungen vorzunehmen.",
         "data": {
-            "subscribe_events": "Events",
-            "add_new_event": "Neue Events hinzufügen"
+          "subscribe_events": "Events",
+          "add_new_event": "Neue Events hinzufügen"
         }
       }
     }

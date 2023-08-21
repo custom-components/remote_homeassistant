@@ -13,6 +13,7 @@ CONF_SECURE = "secure"
 CONF_API_PASSWORD = "api_password"
 CONF_SUBSCRIBE_EVENTS = "subscribe_events"
 CONF_ENTITY_PREFIX = "entity_prefix"
+CONF_MAX_MSG_SIZE = "max_message_size"
 
 CONF_INCLUDE_DOMAINS = "include_domains"
 CONF_INCLUDE_ENTITIES = "include_entities"

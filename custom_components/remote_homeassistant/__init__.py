@@ -53,6 +53,7 @@ CONF_SECURE = "secure"
 CONF_SUBSCRIBE_EVENTS = "subscribe_events"
 CONF_ENTITY_PREFIX = "entity_prefix"
 CONF_FILTER = "filter"
+CONF_MAX_MSG_SIZE = "max_message_size"
 
 STATE_INIT = "initializing"
 STATE_CONNECTING = "connecting"
@@ -71,6 +72,7 @@ INSTANCES_SCHEMA = vol.Schema(
         vol.Optional(CONF_SECURE, default=False): cv.boolean,
         vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
         vol.Required(CONF_ACCESS_TOKEN): cv.string,
+        vol.Optional(CONF_MAX_MSG_SIZE, default=16*1024*1024): vol.Coerce(int),
         vol.Optional(CONF_EXCLUDE, default={}): vol.Schema(
             {
                 vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
@@ -300,6 +302,7 @@ class RemoteConnection(object):
         self._secure = config_entry.data.get(CONF_SECURE, False)
         self._verify_ssl = config_entry.data.get(CONF_VERIFY_SSL, False)
         self._access_token = config_entry.data.get(CONF_ACCESS_TOKEN)
+        self._max_msg_size = config_entry.data.get(CONF_MAX_MSG_SIZE)
 
         # see homeassistant/components/influxdb/__init__.py
         # for include/exclude logic
@@ -416,7 +419,7 @@ class RemoteConnection(object):
 
             try:
                 _LOGGER.info("Connecting to %s", url)
-                self._connection = await session.ws_connect(url)
+                self._connection = await session.ws_connect(url, max_msg_size = self._max_msg_size)
             except aiohttp.client_exceptions.ClientError:
                 _LOGGER.error("Could not connect to %s, retry in 10 seconds...", url)
                 self.set_connection_state(STATE_RECONNECTING)
@@ -528,6 +531,8 @@ class RemoteConnection(object):
 
             if data.type == aiohttp.WSMsgType.ERROR:
                 _LOGGER.error("websocket connection had an error")
+                if data.data.code == aiohttp.WSCloseCode.MESSAGE_TOO_BIG:
+                    _LOGGER.error(f"please consider increasing message size with `{CONF_MAX_MSG_SIZE}`")
                 break
 
             try:
