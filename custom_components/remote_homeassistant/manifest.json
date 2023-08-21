@@ -13,6 +13,6 @@
   "zeroconf": [
     "_home-assistant._tcp.local."
   ],
-  "version": "3.10",
+  "version": "3.11",
   "iot_class": "local_push"
 }
