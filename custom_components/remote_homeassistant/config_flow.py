@@ -20,7 +20,7 @@ from .const import (CONF_ENTITY_PREFIX,  # pylint:disable=unused-import
                     CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
                     CONF_LOAD_COMPONENTS, CONF_MAIN, CONF_OPTIONS, CONF_REMOTE, CONF_REMOTE_CONNECTION,
                     CONF_SECURE, CONF_SERVICE_PREFIX, CONF_SERVICES, CONF_MAX_MSG_SIZE,
-                    CONF_SUBSCRIBE_EVENTS, DOMAIN, REMOTE_ID)
+                    CONF_SUBSCRIBE_EVENTS, DOMAIN, REMOTE_ID, DEFAULT_MAX_MSG_SIZE)
 from .rest_api import (ApiProblem, CannotConnect, EndpointMissing, InvalidAuth,
                        UnsupportedVersion, async_get_discovery_info)
 
