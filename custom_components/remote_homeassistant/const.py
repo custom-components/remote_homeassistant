@@ -30,3 +30,5 @@ REMOTE_ID = "remote"
 
 # replaces 'from homeassistant.core import SERVICE_CALL_LIMIT'
 SERVICE_CALL_LIMIT = 10
+
+DEFAULT_MAX_MSG_SIZE = 16*1024*1024

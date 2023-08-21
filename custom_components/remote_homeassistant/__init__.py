@@ -40,7 +40,7 @@ from .const import (CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES,
                     CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
                     CONF_LOAD_COMPONENTS, CONF_OPTIONS, CONF_REMOTE_CONNECTION,
                     CONF_SERVICE_PREFIX, CONF_SERVICES, CONF_UNSUB_LISTENER,
-                    DOMAIN, REMOTE_ID)
+                    DOMAIN, REMOTE_ID, DEFAULT_MAX_MSG_SIZE)
 from .proxy_services import ProxyServices
 from .rest_api import UnsupportedVersion, async_get_discovery_info
 
@@ -72,7 +72,7 @@ INSTANCES_SCHEMA = vol.Schema(
         vol.Optional(CONF_SECURE, default=False): cv.boolean,
         vol.Optional(CONF_VERIFY_SSL, default=True): cv.boolean,
         vol.Required(CONF_ACCESS_TOKEN): cv.string,
-        vol.Optional(CONF_MAX_MSG_SIZE, default=16*1024*1024): vol.Coerce(int),
+        vol.Optional(CONF_MAX_MSG_SIZE, default=DEFAULT_MAX_MSG_SIZE): vol.Coerce(int),
         vol.Optional(CONF_EXCLUDE, default={}): vol.Schema(
             {
                 vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
