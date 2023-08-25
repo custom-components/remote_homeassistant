@@ -83,5 +83,11 @@
     "abort": {
       "not_supported": "No configuration options supported for a remote node"
     }
+  },
+  "services": {
+    "execute": {
+      "name": "Reload remote_homeassistent"
+      "description": "Reload remote_homeassistant and re-process yaml configuration"
   }
+
 }
