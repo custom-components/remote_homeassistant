@@ -46,7 +46,7 @@ from .rest_api import UnsupportedVersion, async_get_discovery_info
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["sensor"]
+PLATFORMS = ["binary_sensor", "sensor"]
 
 CONF_INSTANCES = "instances"
 CONF_SECURE = "secure"
