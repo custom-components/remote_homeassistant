@@ -248,7 +248,7 @@ If you have remote domains (e.g. `switch`), that are not loaded on the main inst
 
 E.g. on the master:
 
-```
+```yaml
 remote_homeassistant:
   instances:
   - host: 10.0.0.2

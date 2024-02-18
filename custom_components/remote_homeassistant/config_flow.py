@@ -1,6 +1,8 @@
 """Config flow for Remote Home-Assistant integration."""
+from __future__ import annotations
 import logging
 import enum
+from typing import Any, Mapping
 
 from urllib.parse import urlparse
 
@@ -31,11 +33,11 @@ ADD_NEW_EVENT = "add_new_event"
 FILTER_OPTIONS = [CONF_ENTITY_ID, CONF_UNIT_OF_MEASUREMENT, CONF_ABOVE, CONF_BELOW]
 
 
-def _filter_str(index, filter):
-    entity_id = filter[CONF_ENTITY_ID]
-    unit = filter[CONF_UNIT_OF_MEASUREMENT]
-    above = filter[CONF_ABOVE]
-    below = filter[CONF_BELOW]
+def _filter_str(index, filter_conf: Mapping[str, str|float]):
+    entity_id = filter_conf[CONF_ENTITY_ID]
+    unit = filter_conf[CONF_UNIT_OF_MEASUREMENT]
+    above = filter_conf[CONF_ABOVE]
+    below = filter_conf[CONF_BELOW]
     return f"{index+1}. {entity_id}, unit: {unit}, above: {above}, below: {below}"
 
 
@@ -50,8 +52,8 @@ async def validate_input(hass: core.HomeAssistant, conf):
             conf[CONF_ACCESS_TOKEN],
             conf.get(CONF_VERIFY_SSL, False),
         )
-    except OSError:
-        raise CannotConnect()
+    except OSError as exc:
+        raise CannotConnect() from exc
 
     return {"title": info["location_name"], "uuid": info["uuid"]}
 
@@ -91,9 +93,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             elif user_input[CONF_TYPE] == CONF_MAIN:
                 return await self.async_step_connection_details()
-            
+
             errors["base"] = "unknown"
-            
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -129,7 +131,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=info["title"], data=user_input)
 
-        user_input = user_input or dict()
+        user_input = user_input or {}
         host = user_input.get(CONF_HOST, self.prefill.get(CONF_HOST) or vol.UNDEFINED)
         port = user_input.get(CONF_PORT, self.prefill.get(CONF_PORT) or vol.UNDEFINED)
         secure = user_input.get(CONF_SECURE, self.prefill.get(CONF_SECURE) or vol.UNDEFINED)
@@ -149,10 +151,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_zeroconf(self, info):
+    async def async_step_zeroconf(self, discovery_info):
         """Handle instance discovered via zeroconf."""
-        properties = info.properties
-        port = info.port
+        properties = discovery_info.properties
+        port = discovery_info.port
         uuid = properties["uuid"]
 
         await self.async_set_unique_id(uuid)
@@ -203,15 +205,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry):
         """Initialize remote_homeassistant options flow."""
         self.config_entry = config_entry
-        self.filters = None
-        self.events = None
-        self.options = None
+        self.filters : list[Any] | None = None
+        self.events : set[Any] | None = None
+        self.options : dict[str, Any] | None = None
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input : dict[str, str] | None = None):
         """Manage basic options."""
         if self.config_entry.unique_id == REMOTE_ID:
             return self.async_abort(reason="not_supported")
-        
+
         if user_input is not None:
             self.options = user_input.copy()
             return await self.async_step_domain_entity_filters()
@@ -252,7 +254,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_domain_entity_filters(self, user_input=None):
         """Manage domain and entity filters."""
-        if user_input is not None:
+        if self.options is not None and user_input is not None:
             self.options.update(user_input)
             return await self.async_step_general_filters()
 
@@ -289,21 +291,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 # Each filter string is prefixed with a number (index in self.filter+1).
                 # Extract all of them and build the final filter list.
                 selected_indices = [
-                    int(filter.split(".")[0]) - 1
-                    for filter in user_input.get(CONF_FILTER, [])
+                    int(filterItem.split(".")[0]) - 1
+                    for filterItem in user_input.get(CONF_FILTER, [])
                 ]
-                self.options[CONF_FILTER] = [self.filters[i] for i in selected_indices]
+                if self.options is not None:
+                    self.options[CONF_FILTER] = [self.filters[i] for i in selected_indices]  # type: ignore
                 return await self.async_step_events()
 
             selected = user_input.get(CONF_FILTER, [])
             new_filter = {conf: user_input.get(conf) for conf in FILTER_OPTIONS}
-            selected.append(_filter_str(len(self.filters), new_filter))
-            self.filters.append(new_filter)
+
+            selected.append(_filter_str(len(self.filters), new_filter))  # type: ignore
+            self.filters.append(new_filter)  # type: ignore
         else:
             self.filters = self.config_entry.options.get(CONF_FILTER, [])
-            selected = [_filter_str(i, filter) for i, filter in enumerate(self.filters)]
+            selected = [_filter_str(i, filterItem) for i, filterItem in enumerate(self.filters)]  # type: ignore
 
-        strings = [_filter_str(i, filter) for i, filter in enumerate(self.filters)]
+        if self.filters is None:
+            self.filters = []
+        strings = [_filter_str(i, filterItem) for i, filterItem in enumerate(self.filters)]
         return self.async_show_form(
             step_id="general_filters",
             data_schema=vol.Schema(
@@ -322,13 +328,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_events(self, user_input=None):
         """Manage event options."""
         if user_input is not None:
-            if ADD_NEW_EVENT not in user_input:
+            if ADD_NEW_EVENT not in user_input and self.options is not None:
                 self.options[CONF_SUBSCRIBE_EVENTS] = user_input.get(
                     CONF_SUBSCRIBE_EVENTS, []
                 )
                 return self.async_create_entry(title="", data=self.options)
 
             selected = user_input.get(CONF_SUBSCRIBE_EVENTS, [])
+            if self.events is None:
+                self.events = set()
             self.events.add(user_input[ADD_NEW_EVENT])
             selected.append(user_input[ADD_NEW_EVENT])
         else:

@@ -30,16 +30,6 @@
       "already_configured": "Already configured"
     }
   },
-  "state": {
-    "_": {
-      "disconnected": "Disconnected",
-      "connecting": "Connecting",
-      "connected": "Connected",
-      "reconnecting": "Re-connecting",
-      "auth_invalid": "Invalid access token",
-      "auth_required": "Authentication Required"
-    }
-  },
   "options": {
     "step": {
       "init": {
@@ -83,5 +73,11 @@
     "abort": {
       "not_supported": "No configuration options supported for a remote node"
     }
+  },
+  "services": {
+    "execute": {
+      "name": "Reload Remote Home-Assistant",
+      "description": "Reload remote_homeassistant and re-process yaml configuration"
+	}
   }
 }
