@@ -16,6 +16,7 @@ from homeassistant.util import slugify
 
 from . import async_yaml_to_config_entry
 from .const import (CONF_ENTITY_PREFIX,  # pylint:disable=unused-import
+                    CONF_ENTITY_NAME_PREFIX, 
                     CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES, CONF_FILTER,
                     CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
                     CONF_LOAD_COMPONENTS, CONF_MAIN, CONF_OPTIONS, CONF_REMOTE, CONF_REMOTE_CONNECTION,
@@ -232,6 +233,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         description={
                             "suggested_value": self.config_entry.options.get(
                                 CONF_ENTITY_PREFIX
+                            )
+                        },
+                    ): str,
+                    vol.Optional(
+                        CONF_ENTITY_NAME_PREFIX,
+                        description={
+                            "suggested_value": self.config_entry.options.get(
+                                CONF_ENTITY_NAME_PREFIX
                             )
                         },
                     ): str,

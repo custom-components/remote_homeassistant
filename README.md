@@ -18,7 +18,7 @@ Platform | Description
 The main instance connects to the Websocket APIs of the remote instances (already enabled out of box), the connection options are specified via the `host`, `port`, and `secure` configuration parameters. If the remote instance requires an access token to connect (created on the Profile page), it can be set via the `access_token` parameter. To ignore SSL warnings in secure mode, set the `verify_ssl` parameter to false.
 
 After the connection is completed, the remote states get populated into the master instance.
-The entity ids can optionally be prefixed via the `entity_prefix` parameter.
+The entity ids can optionally be prefixed via the `entity_prefix` parameter. The entity friendly names can optionally be prefixed via the `entity_friendly_name_prefix` parameter.
 
 The component keeps track which objects originate from which instance. Whenever a service is called on an object, the call gets forwarded to the particular remote instance.
 

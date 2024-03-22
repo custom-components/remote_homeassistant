@@ -46,6 +46,7 @@
         "title": "Basic Options (step 1/4)",
         "data": {
           "entity_prefix": "Entity prefix (optional)",
+          "entity_friednly_name_prefix": "Entity name prefix (optional)",
           "load_components": "Load component (if not loaded)",
           "service_prefix": "Service prefix",
           "services": "Remote Services"
