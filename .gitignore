@@ -1,1 +1,3 @@
 *.pyc
+.devcontainer/devcontainer.json
+.vscode/tasks.json
