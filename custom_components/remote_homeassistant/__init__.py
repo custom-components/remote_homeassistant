@@ -386,7 +386,11 @@ class RemoteConnection(object):
         return entity_id
 
     def _prefixed_entity_friendly_name(self, entity_friendly_name):
-        if self._entity_friendly_name_prefix:
+        if (
+            self._entity_friendly_name_prefix
+            and entity_friendly_name.startswith(self._entity_friendly_name_prefix)
+            == False
+        ):
             entity_friendly_name = (
                 self._entity_friendly_name_prefix + entity_friendly_name
             )
@@ -731,6 +735,10 @@ class RemoteConnection(object):
             # Add local customization data
             if DATA_CUSTOMIZE in self._hass.data:
                 attr.update(self._hass.data[DATA_CUSTOMIZE].get(entity_id))
+
+            for attrId, value in attr.items():
+                if attrId == "friendly_name":
+                    attr[attrId] = self._prefixed_entity_friendly_name(value)
 
             self._entities.add(entity_id)
             self._hass.states.async_set(entity_id, state, attr)
