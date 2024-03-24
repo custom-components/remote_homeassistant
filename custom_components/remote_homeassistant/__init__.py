@@ -18,15 +18,31 @@ import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
-                                 CONF_DOMAINS, CONF_ENTITIES, CONF_ENTITY_ID,
-                                 CONF_EXCLUDE, CONF_HOST, CONF_INCLUDE,
-                                 CONF_PORT, CONF_UNIT_OF_MEASUREMENT,
-                                 CONF_VERIFY_SSL, EVENT_CALL_SERVICE,
-                                 EVENT_HOMEASSISTANT_STOP, EVENT_STATE_CHANGED,
-                                 SERVICE_RELOAD)
-from homeassistant.core import (Context, EventOrigin, HomeAssistant, callback,
-                                split_entity_id)
+from homeassistant.const import (
+    CONF_ABOVE,
+    CONF_ACCESS_TOKEN,
+    CONF_BELOW,
+    CONF_DOMAINS,
+    CONF_ENTITIES,
+    CONF_ENTITY_ID,
+    CONF_EXCLUDE,
+    CONF_HOST,
+    CONF_INCLUDE,
+    CONF_PORT,
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_VERIFY_SSL,
+    EVENT_CALL_SERVICE,
+    EVENT_HOMEASSISTANT_STOP,
+    EVENT_STATE_CHANGED,
+    SERVICE_RELOAD,
+)
+from homeassistant.core import (
+    Context,
+    EventOrigin,
+    HomeAssistant,
+    callback,
+    split_entity_id,
+)
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -36,11 +52,21 @@ from homeassistant.setup import async_setup_component
 
 from custom_components.remote_homeassistant.views import DiscoveryInfoView
 
-from .const import (CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES,
-                    CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
-                    CONF_LOAD_COMPONENTS, CONF_OPTIONS, CONF_REMOTE_CONNECTION,
-                    CONF_SERVICE_PREFIX, CONF_SERVICES, CONF_UNSUB_LISTENER,
-                    DOMAIN, REMOTE_ID, DEFAULT_MAX_MSG_SIZE)
+from .const import (
+    CONF_EXCLUDE_DOMAINS,
+    CONF_EXCLUDE_ENTITIES,
+    CONF_INCLUDE_DOMAINS,
+    CONF_INCLUDE_ENTITIES,
+    CONF_LOAD_COMPONENTS,
+    CONF_OPTIONS,
+    CONF_REMOTE_CONNECTION,
+    CONF_SERVICE_PREFIX,
+    CONF_SERVICES,
+    CONF_UNSUB_LISTENER,
+    DOMAIN,
+    REMOTE_ID,
+    DEFAULT_MAX_MSG_SIZE,
+)
 from .proxy_services import ProxyServices
 from .rest_api import UnsupportedVersion, async_get_discovery_info
 
@@ -52,6 +78,7 @@ CONF_INSTANCES = "instances"
 CONF_SECURE = "secure"
 CONF_SUBSCRIBE_EVENTS = "subscribe_events"
 CONF_ENTITY_PREFIX = "entity_prefix"
+CONF_ENTITY_FRIENDLY_NAME_PREFIX = "entity_friendly_name_prefix"
 CONF_FILTER = "filter"
 CONF_MAX_MSG_SIZE = "max_message_size"
 
@@ -64,6 +91,7 @@ STATE_RECONNECTING = "reconnecting"
 STATE_DISCONNECTED = "disconnected"
 
 DEFAULT_ENTITY_PREFIX = ""
+DEFAULT_ENTITY_FRIENDLY_NAME_PREFIX = ""
 
 INSTANCES_SCHEMA = vol.Schema(
     {
@@ -104,6 +132,10 @@ INSTANCES_SCHEMA = vol.Schema(
         ),
         vol.Optional(CONF_SUBSCRIBE_EVENTS): cv.ensure_list,
         vol.Optional(CONF_ENTITY_PREFIX, default=DEFAULT_ENTITY_PREFIX): cv.string,
+        vol.Optional(
+            CONF_ENTITY_FRIENDLY_NAME_PREFIX,
+            default=DEFAULT_ENTITY_FRIENDLY_NAME_PREFIX,
+        ): cv.string,
         vol.Optional(CONF_LOAD_COMPONENTS): cv.ensure_list,
         vol.Required(CONF_SERVICE_PREFIX, default="remote_"): cv.string,
         vol.Optional(CONF_SERVICES): cv.ensure_list,
@@ -152,6 +184,7 @@ def async_yaml_to_config_entry(instance_conf):
         CONF_FILTER,
         CONF_SUBSCRIBE_EVENTS,
         CONF_ENTITY_PREFIX,
+        CONF_ENTITY_FRIENDLY_NAME_PREFIX,
         CONF_LOAD_COMPONENTS,
         CONF_SERVICE_PREFIX,
         CONF_SERVICES,
@@ -327,6 +360,9 @@ class RemoteConnection(object):
             config_entry.options.get(CONF_SUBSCRIBE_EVENTS, []) + INTERNALLY_USED_EVENTS
         )
         self._entity_prefix = config_entry.options.get(CONF_ENTITY_PREFIX, "")
+        self._entity_friendly_name_prefix = config_entry.options.get(
+            CONF_ENTITY_FRIENDLY_NAME_PREFIX, ""
+        )
 
         self._connection = None
         self._heartbeat_task = None
@@ -348,6 +384,18 @@ class RemoteConnection(object):
             entity_id = domain + "." + object_id
             return entity_id
         return entity_id
+
+    def _prefixed_entity_friendly_name(self, entity_friendly_name):
+        if (
+            self._entity_friendly_name_prefix
+            and entity_friendly_name.startswith(self._entity_friendly_name_prefix)
+            == False
+        ):
+            entity_friendly_name = (
+                self._entity_friendly_name_prefix + entity_friendly_name
+            )
+            return entity_friendly_name
+        return entity_friendly_name
 
     def set_connection_state(self, state):
         """Change current connection state."""
@@ -419,7 +467,9 @@ class RemoteConnection(object):
 
             try:
                 _LOGGER.info("Connecting to %s", url)
-                self._connection = await session.ws_connect(url, max_msg_size = self._max_msg_size)
+                self._connection = await session.ws_connect(
+                    url, max_msg_size=self._max_msg_size
+                )
             except aiohttp.client_exceptions.ClientError:
                 _LOGGER.error("Could not connect to %s, retry in 10 seconds...", url)
                 self.set_connection_state(STATE_RECONNECTING)
@@ -532,7 +582,9 @@ class RemoteConnection(object):
             if data.type == aiohttp.WSMsgType.ERROR:
                 _LOGGER.error("websocket connection had an error")
                 if data.data.code == aiohttp.WSCloseCode.MESSAGE_TOO_BIG:
-                    _LOGGER.error(f"please consider increasing message size with `{CONF_MAX_MSG_SIZE}`")
+                    _LOGGER.error(
+                        f"please consider increasing message size with `{CONF_MAX_MSG_SIZE}`"
+                    )
                 break
 
             try:
@@ -684,6 +736,10 @@ class RemoteConnection(object):
             if DATA_CUSTOMIZE in self._hass.data:
                 attr.update(self._hass.data[DATA_CUSTOMIZE].get(entity_id))
 
+            for attrId, value in attr.items():
+                if attrId == "friendly_name":
+                    attr[attrId] = self._prefixed_entity_friendly_name(value)
+
             self._entities.add(entity_id)
             self._hass.states.async_set(entity_id, state, attr)
 
@@ -730,6 +786,9 @@ class RemoteConnection(object):
                 entity_id = entity["entity_id"]
                 state = entity["state"]
                 attributes = entity["attributes"]
+                for attr, value in attributes.items():
+                    if attr == "friendly_name":
+                        attributes[attr] = self._prefixed_entity_friendly_name(value)
 
                 state_changed(entity_id, state, attributes)
 
