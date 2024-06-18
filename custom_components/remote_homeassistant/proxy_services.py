@@ -1,5 +1,7 @@
 """Support for proxy services."""
+from __future__ import annotations
 import asyncio
+from typing import Any
 
 import voluptuous as vol
 from homeassistant.exceptions import HomeAssistantError
@@ -78,14 +80,14 @@ class ProxyServices:
 
             self.registered_services.append((domain, service))
 
-    async def _async_handle_service_call(self, event):
+    async def _async_handle_service_call(self, event) -> None:
         """Handle service call to proxy service."""
-        # An eception must be raised from the service call handler (thus method) in
+        # An exception must be raised from the service call handler (thus method) in
         # order to end up in the frontend. The code below synchronizes reception of
         # the service call result, so potential error message can be used as exception
         # message. Not very pretty...
         ev = asyncio.Event()
-        res = None
+        res : dict[str,Any] | None = None
 
         def _resp(message):
             nonlocal res
@@ -103,5 +105,5 @@ class ProxyServices:
         )
 
         await asyncio.wait_for(ev.wait(), SERVICE_CALL_LIMIT)
-        if not res["success"]:
+        if isinstance(res, dict) and not res["success"]:
             raise HomeAssistantError(res["error"]["message"])
