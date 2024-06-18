@@ -1,0 +1,78 @@
+{
+    "config": {
+      "flow_title": "Diaľkové ovládanie: {name}",
+      "step": {
+        "user": {
+          "title": "Vyberte typ inštalácie",
+          "description": "Vzdialený uzol je inštancia, z ktorej sa zhromažďujú stavy"
+        },
+        "connection_details": {
+          "title": "Podrobnosti pripojenia",
+          "data": {
+            "host": "Host",
+            "port": "Port",
+            "secure": "Zabezpečiť",
+            "verify_ssl": "Overiť SSL",
+            "access_token": "Prístupový token",
+            "max_message_size": "Maximálna veľkosť správy"
+          }
+        }
+      },
+      "error": {
+        "api_problem": "Zlá odpoveď zo servera",
+        "cannot_connect": "Nepodarilo sa pripojiť k serveru",
+        "invalid_auth": "Neplatné poverenia",
+        "unsupported_version": "Nepodporovaná verzia. Vyžaduje sa aspoň verzia 0.111.",
+        "unknown": "Vyskytla sa neznáma chyba",
+        "missing_endpoint": "Na tohto hostiteľa si musíte nainštalovať Remote Home Assistant a do jeho konfigurácie pridať remote_homeassistant:."
+      },
+      "abort": {
+        "already_configured": "Už je nakonfigurovaný"
+      }
+    },
+    "options": {
+      "step": {
+        "init": {
+          "title": "Základné možnosti (krok 1/4)",
+          "data": {
+            "entity_prefix": "Predpona entity (voliteľné)",
+            "entity_friendly_name_prefix": "Predpona entity name (voliteľné)",
+            "load_components": "Načítať komponent (ak nie je načítaný)",
+            "service_prefix": "Predpona služby",
+            "services": "Vzdialené služby"
+          }
+        },
+        "domain_entity_filters": {
+          "title": "Filtre domén a entít (krok 2/4)",
+          "data": {
+            "include_domains": "Zahrnúť domény",
+            "include_entities": "Zahrnúť entity",
+            "exclude_domains": "Vylúčiť domény",
+            "exclude_entities": "Vylúčiť entity"
+          }
+        },
+        "general_filters": {
+          "title": "Filtre (krok 3/4)",
+          "description": "Zadajte nový filter `Entity ID`, jeden alebo viac atribútov filtra a stlačte `Submit`. Odstráňte existujúce filtre tak, že ich zrušíte `Filters`.\n\nOpustiť `Entity ID` vyprázdnite a stlačte `Submit` aby ste nevykonali žiadne ďalšie zmeny.",
+          "data": {
+            "filter": "Filtre",
+            "entity_id": "Entity ID",
+            "unit_of_measurement": "Jednotka merania",
+            "above": "Nad",
+            "below": "Pod"
+          }
+        },
+        "events": {
+          "title": "Odoberané udalosti (krok 4/4)",
+          "description": "Pridajte novú odoberanú udalosť zadaním jej názvu `Add new event` a stlačiť `Submit`. Odstráňte existujúce udalosti zrušením ich začiarknutia `Events`.\n\nOpustiť `Add new event` a stlačiť `Submit` aby ste nevykonali žiadne ďalšie zmeny.",
+          "data": {
+            "subscribe_events": "Udalosti",
+            "add_new_event": "Pridať novú udalosť"
+          }
+        }
+      },
+      "abort": {
+        "not_supported": "Pre vzdialený uzol nie sú podporované žiadne možnosti konfigurácie"
+      }
+    }
+  }
