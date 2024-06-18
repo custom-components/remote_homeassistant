@@ -36,7 +36,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.reload import async_integration_yaml_config
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.helpers.typing import ConfigType, HomeAssistantType
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.setup import async_setup_component
 
 from custom_components.remote_homeassistant.views import DiscoveryInfoView
@@ -187,11 +187,11 @@ async def _async_update_config_entry_if_from_yaml(hass, entries_by_id, conf):
             hass.config_entries.async_update_entry(entry, data=data, options=options)
 
 
-async def setup_remote_instance(hass: HomeAssistantType):
+async def setup_remote_instance(hass: HomeAssistant.core.HomeAssistant):
     hass.http.register_view(DiscoveryInfoView())
 
 
-async def async_setup(hass: HomeAssistantType, config: ConfigType):
+async def async_setup(hass: HomeAssistant.core.HomeAssistant, config: ConfigType):
     """Set up the remote_homeassistant component."""
     hass.data.setdefault(DOMAIN, {})
 
@@ -215,7 +215,7 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType):
 
     hass.async_create_task(setup_remote_instance(hass))
 
-    hass.helpers.service.async_register_admin_service(
+    async_register_admin_service(hass,
         DOMAIN,
         SERVICE_RELOAD,
         _handle_reload,
