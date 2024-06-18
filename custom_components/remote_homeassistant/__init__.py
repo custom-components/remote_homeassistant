@@ -31,9 +31,11 @@ from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
 from homeassistant.core import (Context, EventOrigin, HomeAssistant, callback,
                                 split_entity_id)
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.reload import async_integration_yaml_config
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.setup import async_setup_component
 
@@ -485,7 +487,7 @@ class RemoteConnection:
         if self._connection is None:
             _LOGGER.error("No remote websocket connection")
             return
-        
+
         _id = self._next_id()
         self._handlers[_id] = handler
         try:
@@ -689,6 +691,17 @@ class RemoteConnection:
                     pass
 
             entity_id = self._prefixed_entity_id(entity_id)
+
+            # Add local unique id
+            domain, object_id = split_entity_id(entity_id)
+            attr['unique_id'] = f"{self._entry.unique_id[:16]}_{entity_id}"
+            entity_registry = er.async_get(self._hass)
+            entity_registry.async_get_or_create(
+                domain=domain,
+                platform='remote_homeassistant',
+                unique_id=attr['unique_id'],
+                suggested_object_id=object_id,
+            )
 
             # Add local customization data
             if DATA_CUSTOMIZE in self._hass.data:
