@@ -36,6 +36,7 @@
         "title": "Basis-Einstellungen (Schritt 1/4)",
         "data": {
           "entity_prefix": "Entitätspräfix (optional)",
+          "entity_friendly_name_prefix": "Entitätsname präfix (optional)",
           "load_components": "Komponente laden (wenn nicht geladen)",
           "service_prefix": "Servicepräfix",
           "services": "Remote Services"

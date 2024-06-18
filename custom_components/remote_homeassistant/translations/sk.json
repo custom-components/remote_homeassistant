@@ -36,6 +36,7 @@
           "title": "Základné možnosti (krok 1/4)",
           "data": {
             "entity_prefix": "Predpona entity (voliteľné)",
+            "entity_friendly_name_prefix": "Predpona entity name (voliteľné)",
             "load_components": "Načítať komponent (ak nie je načítaný)",
             "service_prefix": "Predpona služby",
             "services": "Vzdialené služby"

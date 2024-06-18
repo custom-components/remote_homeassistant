@@ -3,8 +3,10 @@ from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
-from .const import DOMAIN, CONF_ENTITY_PREFIX, CONF_SECURE, CONF_MAX_MSG_SIZE, DEFAULT_MAX_MSG_SIZE
-
+from .const import (DOMAIN, CONF_ENTITY_PREFIX,
+                    CONF_ENTITY_FRIENDLY_NAME_PREFIX,
+                    CONF_SECURE, CONF_MAX_MSG_SIZE,
+                    DEFAULT_MAX_MSG_SIZE)
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up sensor based ok config entry."""
@@ -46,6 +48,7 @@ class ConnectionStatusSensor(Entity):
             "verify_ssl": self._entry.data.get(CONF_VERIFY_SSL, False),
             "max_msg_size": self._entry.data.get(CONF_MAX_MSG_SIZE, DEFAULT_MAX_MSG_SIZE),
             "entity_prefix": self._entry.options.get(CONF_ENTITY_PREFIX, ""),
+            "entity_friendly_name_prefix": self._entry.options.get(CONF_ENTITY_FRIENDLY_NAME_PREFIX, ""),
             "uuid": self.unique_id,
         }
 

@@ -36,6 +36,7 @@
         "title": "Opções básicas (passo 1/4)",
         "data": {
           "entity_prefix": "Prefixo da entidade (opcional)",
+          "entity_friendly_name_prefix": "Prefixo da entidade nombre (opcional)",
           "load_components": "Carregar componente (se não estiver carregado)",
           "service_prefix": "Prefixo do serviço",
           "services": "Serviços remotos"
