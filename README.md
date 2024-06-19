@@ -19,6 +19,7 @@ The main instance connects to the Websocket APIs of the remote instances (alread
 
 After the connection is completed, the remote states get populated into the master instance.
 The entity ids can optionally be prefixed via the `entity_prefix` parameter.
+
 The entity friendly names can optionally be prefixed via the `entity_friendly_name_prefix` parameter.
 
 The component keeps track which objects originate from which instance. Whenever a service is called on an object, the call gets forwarded to the particular remote instance.
@@ -58,11 +59,11 @@ This is not needed on the main instance.
 
 1. Add a new Remote Home-Assistant integration
 
-<img src="img/setup.png" height="400"/>
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/setup.png" height="400"/>
 
 2. Specify the connection details to the remote instance
 
-<img src="img/device.png" height="400"/>
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/device.png" height="400"/>
 
 You can generate an access token in the by logging into your remote instance, clicking on your user profile icon, and then selecting "Create Token" under "Long-Lived Access Tokens".
 
@@ -70,17 +71,17 @@ Check "Secure" if you want to connect via a secure (https/wss) connection
 
 3. After the instance is added, you can configure additional Options by clicking the "Options" button.
 
-<img src="img/options.png" height="200"/>
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/options.png" height="200"/>
 
 4. You can configure an optional prefix that gets prepended to all remote entities (if unsure, leave this blank).
 
-<img src="img/step1.png" height="200"/>
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/step1.png" height="200"/>
 
 Click "Submit" to proceed to the next step.
 
 5. You can also define filters, that include/exclude specified entities or domains from the remote instance.
 
-<img src="img/step2.png" height="200"/>
+<img src="https://raw.githubusercontent.com/lukas-hetzenecker/home-assistant-remote/master/img/step2.png" height="200"/>
 
 
 
@@ -116,6 +117,7 @@ remote_homeassistant:
     verify_ssl: false
     access_token: !secret access_token
     entity_prefix: "instance02_"
+    entity_friendly_name_prefix: "Instance02 "
     include:
       domains:
       - sensor
@@ -175,6 +177,10 @@ max_message_size:
   type: int
 entity_prefix:
   description: Prefix for all entities of the remote instance.
+  required: false
+  type: string
+entity_friendly_name_prefix:
+  description: Prefix for all entity friendly names of the remote instance.
   required: false
   type: string
 include:
