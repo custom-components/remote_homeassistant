@@ -494,7 +494,7 @@ class RemoteConnection:
             try:
                 await asyncio.wait_for(event.wait(), HEARTBEAT_TIMEOUT)
             except asyncio.TimeoutError:
-                _LOGGER.error("heartbeat failed")
+                _LOGGER.warning("heartbeat failed")
 
                 # Schedule closing on event loop to avoid deadlock
                 asyncio.ensure_future(self._connection.close())
