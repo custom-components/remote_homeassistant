@@ -257,12 +257,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             for domain in entry.options.get(CONF_LOAD_COMPONENTS, []):
                 hass.async_create_task(async_setup_component(hass, domain, {}))
 
-            await asyncio.gather(
-                *[
-                    hass.config_entries.async_forward_entry_setup(entry, platform)
-                    for platform in PLATFORMS
-                ]
-            )
+            await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
             await remote.async_connect()
 
         hass.async_create_task(setup_components_and_platforms())
