@@ -12,7 +12,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/custom-components/remote_homeassistant/issues",
   "requirements": [],
-  "version": "4.3",
+  "version": "4.4",
   "zeroconf": [
     "_home-assistant._tcp.local."
   ]
