@@ -19,11 +19,7 @@ from aiohttp import ClientWebSocketResponse
 import homeassistant.components.websocket_api.auth as api
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-try:
-    # hass 2024.11
-    from homeassistant.core_config import DATA_CUSTOMIZE
-except (ModuleNotFoundError, ImportError):
-    from homeassistant.helpers.entity import DATA_CUSTOMIZE
+from homeassistant.helpers.entity import DATA_CUSTOMIZE
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
                                  CONF_DOMAINS, CONF_ENTITIES, CONF_ENTITY_ID,
@@ -312,7 +308,7 @@ class RemoteConnection:
         self._secure = config_entry.data.get(CONF_SECURE, False)
         self._verify_ssl = config_entry.data.get(CONF_VERIFY_SSL, False)
         self._access_token = config_entry.data.get(CONF_ACCESS_TOKEN)
-        self._max_msg_size = config_entry.data.get(CONF_MAX_MSG_SIZE)
+        self._max_msg_size = config_entry.data.get(CONF_MAX_MSG_SIZE, DEFAULT_MAX_MSG_SIZE)
 
         # see homeassistant/components/influxdb/__init__.py
         # for include/exclude logic
