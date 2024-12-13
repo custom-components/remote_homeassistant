@@ -19,7 +19,11 @@ from aiohttp import ClientWebSocketResponse
 import homeassistant.components.websocket_api.auth as api
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.helpers.entity import DATA_CUSTOMIZE
+try:
+    from homeassistant.core_config import DATA_CUSTOMIZE
+except (ModuleNotFoundError, ImportError):
+    # hass 2024.10 or older
+    from homeassistant.config import DATA_CUSTOMIZE
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
                                  CONF_DOMAINS, CONF_ENTITIES, CONF_ENTITY_ID,
