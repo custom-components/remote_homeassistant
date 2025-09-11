@@ -372,14 +372,18 @@ class RemoteConnection:
         return entity_friendly_name
 
     def _full_picture_url(self, url):
+        if re.match(r"^https?://", url):
+            return url
+
         baseURL = "%s://%s:%s" % (
             "https" if self._secure else "http",
             self._entry.data[CONF_HOST],
             self._entry.data[CONF_PORT],
         )
-        if url.startswith(baseURL) == False:
-            url = baseURL + url
+        if url.startswith(baseURL):
             return url
+        
+        url = baseURL + url
         return url
  
     def set_connection_state(self, state):
