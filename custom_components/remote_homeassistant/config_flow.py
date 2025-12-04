@@ -113,7 +113,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Get options flow for this handler."""
-        # config_entry wird vom OptionsFlow-Basistyp intern gesetzt (read-only Property)
+        # config_entry internally set by OptionsFlow (read-only Property)
         return OptionsFlowHandler()
 
     async def async_step_user(self, user_input=None):
