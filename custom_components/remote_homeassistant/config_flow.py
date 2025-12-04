@@ -9,23 +9,52 @@ from urllib.parse import urlparse
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries, core
-from homeassistant.const import (CONF_ABOVE, CONF_ACCESS_TOKEN, CONF_BELOW,
-                                 CONF_ENTITY_ID, CONF_HOST, CONF_PORT,
-                                 CONF_UNIT_OF_MEASUREMENT, CONF_VERIFY_SSL, CONF_TYPE)
+from homeassistant.const import (
+    CONF_ABOVE,
+    CONF_ACCESS_TOKEN,
+    CONF_BELOW,
+    CONF_ENTITY_ID,
+    CONF_HOST,
+    CONF_PORT,
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_VERIFY_SSL,
+    CONF_TYPE,
+)
 from homeassistant.core import callback
 from homeassistant.helpers.instance_id import async_get
 from homeassistant.util import slugify
 
 from . import async_yaml_to_config_entry
-from .const import (CONF_ENTITY_PREFIX,  # pylint:disable=unused-import
-                    CONF_ENTITY_FRIENDLY_NAME_PREFIX,
-                    CONF_EXCLUDE_DOMAINS, CONF_EXCLUDE_ENTITIES, CONF_FILTER,
-                    CONF_INCLUDE_DOMAINS, CONF_INCLUDE_ENTITIES,
-                    CONF_LOAD_COMPONENTS, CONF_MAIN, CONF_OPTIONS, CONF_REMOTE, CONF_REMOTE_CONNECTION,
-                    CONF_SECURE, CONF_SERVICE_PREFIX, CONF_SERVICES, CONF_MAX_MSG_SIZE,
-                    CONF_SUBSCRIBE_EVENTS, DOMAIN, REMOTE_ID, DEFAULT_MAX_MSG_SIZE)
-from .rest_api import (ApiProblem, CannotConnect, EndpointMissing, InvalidAuth,
-                       UnsupportedVersion, async_get_discovery_info)
+from .const import (
+    CONF_ENTITY_PREFIX,  # pylint:disable=unused-import
+    CONF_ENTITY_FRIENDLY_NAME_PREFIX,
+    CONF_EXCLUDE_DOMAINS,
+    CONF_EXCLUDE_ENTITIES,
+    CONF_FILTER,
+    CONF_INCLUDE_DOMAINS,
+    CONF_INCLUDE_ENTITIES,
+    CONF_LOAD_COMPONENTS,
+    CONF_MAIN,
+    CONF_OPTIONS,
+    CONF_REMOTE,
+    CONF_REMOTE_CONNECTION,
+    CONF_SECURE,
+    CONF_SERVICE_PREFIX,
+    CONF_SERVICES,
+    CONF_MAX_MSG_SIZE,
+    CONF_SUBSCRIBE_EVENTS,
+    DOMAIN,
+    REMOTE_ID,
+    DEFAULT_MAX_MSG_SIZE,
+)
+from .rest_api import (
+    ApiProblem,
+    CannotConnect,
+    EndpointMissing,
+    InvalidAuth,
+    UnsupportedVersion,
+    async_get_discovery_info,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,12 +63,12 @@ ADD_NEW_EVENT = "add_new_event"
 FILTER_OPTIONS = [CONF_ENTITY_ID, CONF_UNIT_OF_MEASUREMENT, CONF_ABOVE, CONF_BELOW]
 
 
-def _filter_str(index, filter_conf: Mapping[str, str|float]):
+def _filter_str(index: int, filter_conf: Mapping[str, str | float]) -> str:
     entity_id = filter_conf[CONF_ENTITY_ID]
     unit = filter_conf[CONF_UNIT_OF_MEASUREMENT]
     above = filter_conf[CONF_ABOVE]
     below = filter_conf[CONF_BELOW]
-    return f"{index+1}. {entity_id}, unit: {unit}, above: {above}, below: {below}"
+    return f"{index + 1}. {entity_id}, unit: {unit}, above: {above}, below: {below}"
 
 
 async def validate_input(hass: core.HomeAssistant, conf):
@@ -74,43 +103,47 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self):
         """Initialize a new ConfigFlow."""
-        self.prefill = {CONF_PORT: 8123, CONF_SECURE: True, CONF_MAX_MSG_SIZE: DEFAULT_MAX_MSG_SIZE}
+        self.prefill = {
+            CONF_PORT: 8123,
+            CONF_SECURE: True,
+            CONF_MAX_MSG_SIZE: DEFAULT_MAX_MSG_SIZE,
+        }
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         """Get options flow for this handler."""
-        return OptionsFlowHandler(config_entry)
+        # config_entry wird vom OptionsFlow-Basistyp intern gesetzt (read-only Property)
+        return OptionsFlowHandler()
 
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
-        errors = {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
             if user_input[CONF_TYPE] == CONF_REMOTE:
                 await self.async_set_unique_id(REMOTE_ID)
                 self._abort_if_unique_id_configured()
-                return self.async_create_entry(title="Remote instance", data=user_input)
+                return self.async_create_entry(
+                    title="Remote instance", data=user_input
+                )
 
             elif user_input[CONF_TYPE] == CONF_MAIN:
                 return await self.async_step_connection_details()
- 
+
             errors["base"] = "unknown"
 
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_TYPE): vol.In([CONF_REMOTE, CONF_MAIN])
-                }
+                {vol.Required(CONF_TYPE): vol.In([CONF_REMOTE, CONF_MAIN])}
             ),
             errors=errors,
         )
 
-
     async def async_step_connection_details(self, user_input=None):
         """Handle the connection details step."""
-        errors = {}
+        errors: dict[str, str] = {}
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
@@ -130,23 +163,35 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(info["uuid"])
                 self._abort_if_unique_id_configured()
-                return self.async_create_entry(title=info["title"], data=user_input)
+                return self.async_create_entry(
+                    title=info["title"], data=user_input
+                )
 
         user_input = user_input or {}
         host = user_input.get(CONF_HOST, self.prefill.get(CONF_HOST) or vol.UNDEFINED)
         port = user_input.get(CONF_PORT, self.prefill.get(CONF_PORT) or vol.UNDEFINED)
-        secure = user_input.get(CONF_SECURE, self.prefill.get(CONF_SECURE) or vol.UNDEFINED)
-        max_msg_size = user_input.get(CONF_MAX_MSG_SIZE, self.prefill.get(CONF_MAX_MSG_SIZE) or vol.UNDEFINED)
+        secure = user_input.get(
+            CONF_SECURE, self.prefill.get(CONF_SECURE) or vol.UNDEFINED
+        )
+        max_msg_size = user_input.get(
+            CONF_MAX_MSG_SIZE, self.prefill.get(CONF_MAX_MSG_SIZE) or vol.UNDEFINED
+        )
         return self.async_show_form(
             step_id="connection_details",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_HOST, default=host): str,
                     vol.Required(CONF_PORT, default=port): int,
-                    vol.Required(CONF_ACCESS_TOKEN, default=user_input.get(CONF_ACCESS_TOKEN, vol.UNDEFINED)): str,
+                    vol.Required(
+                        CONF_ACCESS_TOKEN,
+                        default=user_input.get(CONF_ACCESS_TOKEN, vol.UNDEFINED),
+                    ): str,
                     vol.Required(CONF_MAX_MSG_SIZE, default=max_msg_size): int,
                     vol.Optional(CONF_SECURE, default=secure): bool,
-                    vol.Optional(CONF_VERIFY_SSL, default=user_input.get(CONF_VERIFY_SSL, True)): bool,
+                    vol.Optional(
+                        CONF_VERIFY_SSL,
+                        default=user_input.get(CONF_VERIFY_SSL, True),
+                    ): bool,
                 }
             ),
             errors=errors,
@@ -184,8 +229,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle import from YAML."""
         try:
             info = await validate_input(self.hass, user_input)
-        except Exception:
-            _LOGGER.exception(f"import of {user_input[CONF_HOST]} failed")
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("import of %s failed", user_input[CONF_HOST])
             return self.async_abort(reason="import_failed")
 
         conf, options = async_yaml_to_config_entry(user_input)
@@ -203,24 +248,28 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for the Home Assistant remote integration."""
 
-    def __init__(self, config_entry):
+    def __init__(self):
         """Initialize remote_homeassistant options flow."""
-        self.config_entry = config_entry
-        self.filters : list[Any] | None = None
-        self.events : set[Any] | None = None
-        self.options : dict[str, Any] | None = None
+        # self.config_entry wird von Home Assistant gesetzt (read-only Property)
+        self.filters: list[Any] | None = None
+        self.events: set[Any] | None = None
+        self.options: dict[str, Any] | None = None
 
-    async def async_step_init(self, user_input : dict[str, str] | None = None):
+    async def async_step_init(
+        self, user_input: dict[str, str] | None = None
+    ):
         """Manage basic options."""
         if self.config_entry.unique_id == REMOTE_ID:
             return self.async_abort(reason="not_supported")
-        
+
         if user_input is not None:
             self.options = user_input.copy()
             return await self.async_step_domain_entity_filters()
 
         domains, _ = self._domains_and_entities()
-        domains = set(domains + self.config_entry.options.get(CONF_LOAD_COMPONENTS, []))
+        domains = set(
+            domains + self.config_entry.options.get(CONF_LOAD_COMPONENTS, [])
+        )
 
         remote = self.hass.data[DOMAIN][self.config_entry.entry_id][
             CONF_REMOTE_CONNECTION
@@ -251,7 +300,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         default=self._default(CONF_LOAD_COMPONENTS),
                     ): cv.multi_select(sorted(domains)),
                     vol.Required(
-                        CONF_SERVICE_PREFIX, default=self.config_entry.options.get(CONF_SERVICE_PREFIX) or slugify(self.config_entry.title)
+                        CONF_SERVICE_PREFIX,
+                        default=self.config_entry.options.get(CONF_SERVICE_PREFIX)
+                        or slugify(self.config_entry.title),
                     ): str,
                     vol.Optional(
                         CONF_SERVICES,
@@ -293,32 +344,40 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_general_filters(self, user_input=None):
-        """Manage domain and entity filters."""
+        """Manage general entity filters."""
         if user_input is not None:
             # Continue to next step if entity id is not specified
             if CONF_ENTITY_ID not in user_input:
                 # Each filter string is prefixed with a number (index in self.filter+1).
                 # Extract all of them and build the final filter list.
                 selected_indices = [
-                    int(filterItem.split(".")[0]) - 1
-                    for filterItem in user_input.get(CONF_FILTER, [])
+                    int(filter_item.split(".")[0]) - 1
+                    for filter_item in user_input.get(CONF_FILTER, [])
                 ]
                 if self.options is not None:
-                    self.options[CONF_FILTER] = [self.filters[i] for i in selected_indices]  # type: ignore
+                    self.options[CONF_FILTER] = [
+                        self.filters[i] for i in selected_indices  # type: ignore
+                    ]
                 return await self.async_step_events()
 
             selected = user_input.get(CONF_FILTER, [])
             new_filter = {conf: user_input.get(conf) for conf in FILTER_OPTIONS}
-            
+
             selected.append(_filter_str(len(self.filters), new_filter))  # type: ignore
             self.filters.append(new_filter)  # type: ignore
         else:
             self.filters = self.config_entry.options.get(CONF_FILTER, [])
-            selected = [_filter_str(i, filterItem) for i, filterItem in enumerate(self.filters)] # type: ignore
+            selected = [
+                _filter_str(i, filter_item)
+                for i, filter_item in enumerate(self.filters)  # type: ignore
+            ]
 
         if self.filters is None:
             self.filters = []
-        strings = [_filter_str(i, filterItem) for i, filterItem in enumerate(self.filters)]
+        strings = [
+            _filter_str(i, filter_item)
+            for i, filter_item in enumerate(self.filters)
+        ]
         return self.async_show_form(
             step_id="general_filters",
             data_schema=vol.Schema(
@@ -377,12 +436,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         ]
 
         # Include entities we have in the config explicitly, otherwise they will be
-        # pre-selected and not possible to remove if they are no lobger present on
+        # pre-selected and not possible to remove if they are no longer present on
         # the remote host.
-        include_entities = set(self.config_entry.options.get(CONF_INCLUDE_ENTITIES, []))
-        exclude_entities = set(self.config_entry.options.get(CONF_EXCLUDE_ENTITIES, []))
+        include_entities = set(
+            self.config_entry.options.get(CONF_INCLUDE_ENTITIES, [])
+        )
+        exclude_entities = set(
+            self.config_entry.options.get(CONF_EXCLUDE_ENTITIES, [])
+        )
         entities = sorted(
             remote._all_entity_names | include_entities | exclude_entities
         )
-        domains = sorted(set([entity_id.split(".")[0] for entity_id in entities]))
+        domains = sorted({entity_id.split(".")[0] for entity_id in entities})
         return domains, entities
