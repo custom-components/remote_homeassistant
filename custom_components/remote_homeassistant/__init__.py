@@ -371,7 +371,10 @@ class RemoteConnection:
             return entity_friendly_name
         return entity_friendly_name
 
-    def _full_picture_url(self, url):
+    def _full_picture_url(self, raw_url):
+        # Somehow the icon url can be an array of urls, in that case use the first in the array
+        url = raw_url if isinstance(raw_url, str) else raw_url[0]
+
         if re.match(r"^https?://", url):
             return url
 
