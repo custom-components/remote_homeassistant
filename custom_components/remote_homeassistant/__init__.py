@@ -803,9 +803,21 @@ class RemoteConnection:
             EVENT_CALL_SERVICE, forward_event
         )
 
-        for event in self._subscribe_events:
-            await self.call(fire_event, "subscribe_events", event_type=event)
+		# Subscribe to non-state events as before
+		for event in self._subscribe_events:
+			if event != EVENT_STATE_CHANGED:
+				await self.call(fire_event, "subscribe_events", event_type=event)
 
-        await self.call(got_states, "get_states")
+		# Subscribe only to explicitly selected entities.
+		# Filtering now happens on the remote HA before data is transmitted.
+		await self.call(
+			entities_changed,
+			"subscribe_entities",
+			entity_ids=list(self._whitelist_e),
+		)
 
-        await self.proxy_services.load()
+		# Fetch all entity names once so newly added remote entities
+		# are available in the options UI.
+		await self.call(got_states, "get_states")
+		
+		await self.proxy_services.load()
