@@ -126,6 +126,7 @@ remote_homeassistant:
       entities:
       - zwave.controller
       - zwave.desk_light
+      - sensor.*_battery
     exclude:
       domains:
       - persistent_notification

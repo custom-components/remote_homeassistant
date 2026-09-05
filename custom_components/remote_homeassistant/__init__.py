@@ -86,7 +86,9 @@ INSTANCES_SCHEMA = vol.Schema(
         vol.Optional(CONF_MAX_MSG_SIZE, default=DEFAULT_MAX_MSG_SIZE): vol.Coerce(int),
         vol.Optional(CONF_EXCLUDE, default={}): vol.Schema(
             {
-                vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
+                vol.Optional(CONF_ENTITIES, default=[]): vol.All(
+                    cv.ensure_list, [cv.string]
+                ),
                 vol.Optional(CONF_DOMAINS, default=[]): vol.All(
                     cv.ensure_list, [cv.string]
                 ),
@@ -94,7 +96,9 @@ INSTANCES_SCHEMA = vol.Schema(
         ),
         vol.Optional(CONF_INCLUDE, default={}): vol.Schema(
             {
-                vol.Optional(CONF_ENTITIES, default=[]): cv.entity_ids,
+                vol.Optional(CONF_ENTITIES, default=[]): vol.All(
+                    cv.ensure_list, [cv.string]
+                ),
                 vol.Optional(CONF_DOMAINS, default=[]): vol.All(
                     cv.ensure_list, [cv.string]
                 ),
@@ -684,12 +688,21 @@ class RemoteConnection:
 
             self._all_entity_names.add(entity_id)
 
-            if entity_id in self._blacklist_e or domain in self._blacklist_d:
+            if (
+                any(
+                    fnmatch.fnmatchcase(entity_id, pattern)
+                    for pattern in self._blacklist_e
+                )
+                or domain in self._blacklist_d
+            ):
                 return
 
             if (
                 (self._whitelist_e or self._whitelist_d)
-                and entity_id not in self._whitelist_e
+                and not any(
+                    fnmatch.fnmatchcase(entity_id, pattern)
+                    for pattern in self._whitelist_e
+                )
                 and domain not in self._whitelist_d
             ):
                 return
